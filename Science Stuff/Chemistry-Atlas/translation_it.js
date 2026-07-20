@@ -47,7 +47,7 @@ Object.assign(IT, {
   'Read the cation, then the anion. Monatomic anions take':'Leggi prima il catione, poi l’anione. Gli anioni monoatomici prendono','Keep polyatomic names unchanged:':'Mantieni invariati i nomi degli ioni poliatomici:','No numerical prefixes.':'Nessun prefisso numerico.',
   'Write ion charges, then choose the lowest subscripts giving net charge zero:':'Scrivi le cariche ioniche, poi scegli i minimi pedici che danno carica netta zero:','Use parentheses when several polyatomic ions are needed:':'Usa le parentesi quando occorrono più ioni poliatomici:',
   'Infer metal charge from the anion and state it as a Roman numeral:':'Ricava la carica del metallo dall’anione e indicala con un numero romano:','Iron(II) oxide would be FeO.':'L’ossido di ferro(II) sarebbe FeO.',
-  'Use prefixes for atom counts; normally omit mono- on the first element.':'Usa i prefissi per il numero di atomi; normalmente ometti mono- sul primo elemento.','The second element takes -ide:':'Il secondo elemento assume il suffisso appropriato:','Prefixes become subscripts directly—never “balance charges”:':'I prefissi diventano direttamente pedici: non “bilanciare le cariche”:','The (aq) state matters.':'Lo stato (aq) è determinante.','State symbols:':'Simboli di stato:','solid':'solido','liquid':'liquido','gas':'gas','dissolved in water':'disciolto in acqua.'
+  'Use prefixes for atom counts; normally omit mono- on the first element.':'Usa i prefissi per il numero di atomi; normalmente ometti mono- sul primo elemento.','The second element takes -ide:':'Il secondo elemento assume il suffisso appropriato:','Prefixes become subscripts directly—never “balance charges”:':'I prefissi diventano direttamente pedici: non “bilanciare le cariche”:','The (aq) state matters.':'Lo stato (aq) è determinante.','State symbols:':'Simboli di stato:','solid':'solido','liquid':'liquido','gas':'gas','dissolved in water':'disciolto in acqua'
 });
 
 Object.assign(IT,{
@@ -62,6 +62,47 @@ Object.assign(IT,{
 });
 
 function addElementNames(en,it){en.split('|').forEach((n,i)=>IT[n]=it.split('|')[i])}
+
+Object.assign(IT, {
+  'neutrons in a representative isotope':'neutroni in un isotopo rappresentativo',
+  '1 protons · about 0 neutrons in a representative isotope':'1 protone · circa 0 neutroni in un isotopo rappresentativo',
+  '1 electrons (simplified neutral atom)':'1 elettrone (atomo neutro semplificato)',
+  '¹H protium · ²H deuterium · ³H tritium':'¹H protio · ²H deuterio · ³H trizio',
+  'Acid–base':'Acido–base',
+  'Metathesis':'Metatesi',
+  'Combination · decomposition · substitution':'Combinazione · decomposizione · sostituzione',
+  'mol of':'mol di',
+  'Ionic':'Ionico',
+  'Molecular':'Molecolare',
+  'acid':'acido',
+  'sodium chloride':'cloruro di sodio',
+  'calcium carbonate':'carbonato di calcio',
+  'aluminium oxide':'ossido di alluminio',
+  'calcium nitrate':'nitrato di calcio',
+  'Fe₂O₃ has 3 × O²⁻ = −6, so 2 Fe total +6:':'Fe₂O₃ contiene 3 × O²⁻ = −6, quindi i 2 Fe devono totalizzare +6:',
+  'iron(III) oxide':'ossido di ferro(III)',
+  'carbon monoxide':'monossido di carbonio',
+  'carbon dioxide':'diossido di carbonio',
+  'dinitrogen tetroxide':'tetrossido di diazoto',
+  'sulfur hexafluoride':'esafluoruro di zolfo',
+  'dinitrogen pentoxide':'pentossido di diazoto',
+  'Prefixes:':'Prefissi:',
+  'HCl(aq): hydrochloric acid. Anion':'HCl(aq): acido cloridrico. L’anione',
+  'nitrate → nitric':'nitrato → nitrico',
+  'nitrite → nitrous':'nitrito → nitroso',
+  'copper(II) sulfate pentahydrate':'solfato di rame(II) pentaidrato',
+  'sodium':'sodio','calcium':'calcio','aluminium':'alluminio','ammonium':'ammonio',
+  'chloride':'cloruro','oxide':'ossido','sulfide':'solfuro','nitride':'nitruro',
+  'hydroxide':'idrossido','nitrate':'nitrato','nitrite':'nitrito','carbonate':'carbonato',
+  'sulfate':'solfato','sulfite':'solfito','phosphate':'fosfato',
+  'classify → identify ions or count atoms → apply the matching rule → check charge neutrality or prefixes.':'classifica → identifica gli ioni o conta gli atomi → applica la regola corretta → verifica la neutralità della carica o i prefissi.',
+  'Correct — three O²⁻ ions total −6, so two iron ions must total +6: each is Fe³⁺.':'Corretto: tre ioni O²⁻ totalizzano −6, quindi i due ioni ferro devono totalizzare +6; ciascuno è Fe³⁺.',
+  'Not quite. Use oxide as O²⁻, total the negative charge, then infer the iron oxidation state.':'Non ancora. Considera l’ossido come O²⁻, somma la carica negativa e ricava lo stato di ossidazione del ferro.',
+  'CATHODE':'CATODO','ANODE':'ANODO','volumes':'volumi','volume':'volume',
+  'CO₂ expands the foam':'La CO₂ espande la schiuma','Fe nail':'Chiodo di Fe','Cu deposit':'Deposito di Cu',
+  'ordered lattice grows from nuclei':'il reticolo ordinato cresce dai nuclei',
+  'O₂ foam + released heat':'Schiuma di O₂ + calore liberato'
+});
 addElementNames('Hydrogen|Helium|Lithium|Beryllium|Boron|Carbon|Nitrogen|Oxygen|Fluorine|Neon|Sodium|Magnesium|Aluminium|Silicon|Phosphorus|Sulfur|Chlorine|Argon|Potassium|Calcium|Scandium|Titanium|Vanadium|Chromium|Manganese|Iron|Cobalt|Nickel|Copper|Zinc|Gallium|Germanium|Arsenic|Selenium|Bromine|Krypton|Rubidium|Strontium|Yttrium|Zirconium','Idrogeno|Elio|Litio|Berillio|Boro|Carbonio|Azoto|Ossigeno|Fluoro|Neon|Sodio|Magnesio|Alluminio|Silicio|Fosforo|Zolfo|Cloro|Argon|Potassio|Calcio|Scandio|Titanio|Vanadio|Cromo|Manganese|Ferro|Cobalto|Nichel|Rame|Zinco|Gallio|Germanio|Arsenico|Selenio|Bromo|Kripton|Rubidio|Stronzio|Ittrio|Zirconio');
 
 addElementNames('Niobium|Molybdenum|Technetium|Ruthenium|Rhodium|Palladium|Silver|Cadmium|Indium|Tin|Antimony|Tellurium|Iodine|Xenon|Caesium|Barium|Lanthanum|Cerium|Praseodymium|Neodymium|Promethium|Samarium|Europium|Gadolinium|Terbium|Dysprosium|Holmium|Erbium|Thulium|Ytterbium|Lutetium|Hafnium|Tantalum|Tungsten|Rhenium|Osmium|Iridium|Platinum|Gold|Mercury','Niobio|Molibdeno|Tecnezio|Rutenio|Rodio|Palladio|Argento|Cadmio|Indio|Stagno|Antimonio|Tellurio|Iodio|Xeno|Cesio|Bario|Lantanio|Cerio|Praseodimio|Neodimio|Promezio|Samario|Europio|Gadolinio|Terbio|Disprosio|Olmio|Erbio|Tulio|Itterbio|Lutezio|Afnio|Tantalio|Tungsteno|Renio|Osmio|Iridio|Platino|Oro|Mercurio');
