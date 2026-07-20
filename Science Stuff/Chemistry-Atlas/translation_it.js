@@ -125,13 +125,20 @@ function bondClarifier() {
   const it = document.getElementById('language').value === 'it';
   const acid = selected.fam === 'Acids';
   const ionic = selected.bond === 'ionic';
+  const structured = !!structureSpec[selected.formula];
   let en, ita;
-  if (acid) {
+  if (acid && !structured) {
     en = '<b>Why are no bonds drawn here?</b> An acid formula does not by itself specify the physical state. Pure HCl, HNO₃ or H₂SO₄ are molecular substances with covalent bonds; in water they transfer protons to H₂O and form solvated ions to an extent that depends on acid strength. A single ball-and-stick picture would therefore conflate the pure molecular species with the aqueous ionic system.';
     ita = '<b>Perché qui non sono disegnati legami?</b> La formula di un acido non specifica da sola lo stato fisico. HCl, HNO₃ o H₂SO₄ puri sono sostanze molecolari con legami covalenti; in acqua trasferiscono protoni a H₂O e formano ioni solvatati in misura dipendente dalla forza dell’acido. Un unico modello a sfere confonderebbe quindi la specie molecolare pura con il sistema ionico acquoso.';
+  } else if (ionic && structured) {
+    en = '<b>What does the dashed line mean?</b> It marks electrostatic attraction between oppositely charged ions, not a localized shared-electron bond. The isolated ion pair is only a teaching symbol: in a solid salt, each ion belongs to an extended lattice and interacts with several neighbours.';
+    ita = '<b>Che cosa significa la linea tratteggiata?</b> Indica l’attrazione elettrostatica tra ioni di carica opposta, non un legame localizzato basato sulla condivisione di elettroni. La coppia isolata è solo un simbolo didattico: in un sale solido ogni ione appartiene a un reticolo esteso e interagisce con più vicini.';
   } else if (ionic) {
     en = '<b>Why are no individual ionic bonds drawn?</b> This formula describes the smallest electrically neutral ratio in an extended crystal lattice, not a discrete molecule. Each ion interacts electrostatically with several neighbours; drawing one isolated pair would be misleading.';
     ita = '<b>Perché non sono disegnati singoli legami ionici?</b> La formula descrive il minimo rapporto elettricamente neutro in un reticolo cristallino esteso, non una molecola discreta. Ogni ione interagisce elettrostaticamente con più vicini; disegnare una coppia isolata sarebbe fuorviante.';
+  } else if (structured) {
+    en = '<b>How should the lines be read?</b> A solid line represents one covalent bond; parallel lines represent formal double or triple bonds. A solid-plus-dashed pair marks equivalent, resonance-delocalized bonding. These are simplified two-dimensional structural conventions, not literal sticks between atoms.';
+    ita = '<b>Come si leggono le linee?</b> Una linea continua rappresenta un legame covalente; linee parallele rappresentano formalmente legami doppi o tripli. Una coppia continua-tratteggiata indica legami equivalenti delocalizzati per risonanza. Sono convenzioni strutturali bidimensionali semplificate, non bastoncini reali fra gli atomi.';
   } else {
     en = '<b>Why is there no bond network?</b> The molecular formula fixes elemental composition but may correspond to different constitutional isomers, stereoisomers or extended structures. Unless a verified structure is encoded, this atlas shows exact composition and deliberately does not invent connectivity or bond order.';
     ita = '<b>Perché non compare una rete di legami?</b> La formula molecolare fissa la composizione elementare ma può corrispondere a diversi isomeri costituzionali, stereoisomeri o strutture estese. Se non è codificata una struttura verificata, l’atlante mostra la composizione esatta e non inventa connettività o ordine di legame.';
@@ -145,4 +152,12 @@ document.getElementById('language').addEventListener('change', () => {
   document.querySelector('.bond-clarifier')?.remove();
   bondClarifier();
   setTimeout(() => translateTree(), 0);
+});
+
+Object.assign(IT, {
+  'covalent bond · solid line':'legame covalente · linea continua',
+  'double/triple bonds · parallel lines':'legami doppi/tripli · linee parallele',
+  'resonance-delocalized bond · solid + dashed':'legame delocalizzato per risonanza · continuo + tratteggiato',
+  'ionic attraction · dashed amber line':'attrazione ionica · linea ambra tratteggiata',
+  'Lines are a bonding key, not a distance scale.':'Le linee costituiscono una legenda dei legami, non una scala delle distanze.'
 });
