@@ -22,4 +22,6 @@ st.markdown(
 )
 
 html = (Path(__file__).parent / "chemistry_atlas.html").read_text(encoding="utf-8")
+translation_js = (Path(__file__).parent / "translation_it.js").read_text(encoding="utf-8")
+html = html.replace('<script src="translation_it.js"></script>', f"<script>{translation_js}</script>")
 components.html(html, height=1160, scrolling=True)
