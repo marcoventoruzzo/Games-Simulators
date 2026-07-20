@@ -73,6 +73,7 @@ Object.assign(IT, {
   'Combination · decomposition · substitution':'Combinazione · decomposizione · sostituzione',
   'mol of':'mol di',
   'mol of Water':'mol di Acqua',
+  'of Water':'di Acqua',
   'Ionic':'Ionico',
   'Molecular':'Molecolare',
   'acid':'acido',
