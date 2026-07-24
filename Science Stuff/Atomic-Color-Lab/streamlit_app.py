@@ -10,9 +10,9 @@ st.set_page_config(
 )
 
 
-# Shell populations are exact for neutral ground-state atoms.  The animated
-# line is a representative observed neutral-atom line; it is deliberately kept
-# separate from the colour of the bulk solid under white illumination.
+# Shell populations are exact for neutral ground-state atoms. The three
+# animated wavelengths form a deliberately ordered teaching comparison; they
+# are not presented as characteristic spectral lines of the three elements.
 ATOMS = [
     {
         "id": "copper",
@@ -23,12 +23,12 @@ ATOMS = [
         "configuration": "[Ar] 3d¹⁰ 4s¹",
         "material_color": "red-orange",
         "material_hex": "#b86238",
-        "line": "Cu I · representative visible line",
-        "wavelength": 510.554,
-        "energy": 2.43,
-        "photon_color": "#42f58d",
-        "glow": "rgba(66,245,141,.58)",
-        "note": "Bulk copper reflects red-orange light preferentially. Its 510.554 nm atomic photon is green.",
+        "line": "Didactic emitted photon · long wavelength",
+        "wavelength": 620.0,
+        "energy": 2.00,
+        "photon_color": "#ff6038",
+        "glow": "rgba(255,96,56,.60)",
+        "note": "Bulk copper looks red-orange. The teaching photon is also shown red-orange, with the longest wavelength of the three.",
     },
     {
         "id": "sulfur",
@@ -39,12 +39,12 @@ ATOMS = [
         "configuration": "[Ne] 3s² 3p⁴",
         "material_color": "yellow",
         "material_hex": "#e7d43b",
-        "line": "S I · representative visible line",
-        "wavelength": 469.411,
-        "energy": 2.64,
-        "photon_color": "#4f8cff",
-        "glow": "rgba(79,140,255,.60)",
-        "note": "Solid sulfur reflects yellow light preferentially. This 469.411 nm atomic photon is blue.",
+        "line": "Didactic emitted photon · medium wavelength",
+        "wavelength": 580.0,
+        "energy": 2.14,
+        "photon_color": "#ffd21f",
+        "glow": "rgba(255,210,31,.60)",
+        "note": "Solid sulfur looks yellow. The teaching photon is also shown yellow, with an intermediate wavelength.",
     },
     {
         "id": "silicon",
@@ -55,12 +55,12 @@ ATOMS = [
         "configuration": "[Ne] 3s² 3p²",
         "material_color": "blue-grey",
         "material_hex": "#657786",
-        "line": "Si I · representative visible line",
-        "wavelength": 390.552,
-        "energy": 3.17,
-        "photon_color": "#8d5cff",
-        "glow": "rgba(141,92,255,.64)",
-        "note": "Crystalline silicon looks blue-grey. Its 390.552 nm atomic line is at the violet edge of vision.",
+        "line": "Didactic emitted photon · short wavelength",
+        "wavelength": 470.0,
+        "energy": 2.64,
+        "photon_color": "#7197c4",
+        "glow": "rgba(113,151,196,.64)",
+        "note": "Crystalline silicon looks blue-grey. A photon cannot be grey, so the teaching photon is physically blue and drawn desaturated blue-grey.",
     },
 ]
 
@@ -70,7 +70,7 @@ COMPONENT_HTML = """
   <header class="lab-toolbar">
     <div>
       <span class="eyebrow">SOLID COLOUR + ATOMIC EMISSION</span>
-      <strong>Compare white-light appearance with one real atomic emission line</strong>
+      <strong>Compare three teaching photons: longer red-orange, medium yellow, shorter blue</strong>
     </div>
     <div class="actions">
       <button id="all-atoms" type="button">Excite all atoms</button>
@@ -214,10 +214,10 @@ function frame(state,now){
     if(t<.28){packet.style.opacity='1';packet.setAttribute('cx',38+(t/.28)*132)}
     else if(t<.43){const p=(t-.28)/.15;packet.style.opacity=String(1-p);ex=hx+(hx-230)*.32*p;ey=hy+(hy-151)*.32*p;text='Energy absorbed · electron promoted'}
     else if(t<.60){packet.style.opacity='0';ex=hx+(hx-230)*.32;ey=hy+(hy-151)*.32;text='Atom in a short-lived excited state'}
-    else if(t<.73){const p=(t-.60)/.13;packet.style.opacity='0';ex=hx+(hx-230)*.32*(1-p);ey=hy+(hy-151)*.32*(1-p);end=278+p*30;text='Electron relaxes · photon emitted'}
-    else{packet.style.opacity='0';end=308+((t-.73)/.27)*78;text=`${s.atom.wavelength.toFixed(3)} nm photon leaves the atom`}
+    else if(t<.73){const p=(t-.60)/.13;packet.style.opacity='0';ex=hx+(hx-230)*.32*(1-p);ey=hy+(hy-151)*.32*(1-p);text='Electron returning to its original level'}
+    else{packet.style.opacity='0';end=hx+((t-.73)/.27)*(386-hx);text=`Photon born at the return point · ${s.atom.wavelength.toFixed(0)} nm`}
     electron.setAttribute('cx',ex);electron.setAttribute('cy',ey)
-    if(end){wave.style.opacity='1';photon.style.opacity='1';wave.setAttribute('d',wavePath(278,end,151,s.atom.wavelength,now/180));photon.setAttribute('cx',end);photon.setAttribute('cy',151)}
+    if(end){wave.style.opacity='1';photon.style.opacity='1';wave.setAttribute('d',wavePath(hx,end,hy,s.atom.wavelength,now/180));photon.setAttribute('cx',end);photon.setAttribute('cy',hy)}
     else{wave.style.opacity='0';photon.style.opacity='0'}
     status.textContent=text;stage.textContent=text
   })
@@ -258,7 +258,7 @@ atomic_lab = st.components.v2.component(
 st.title("Atomic color lab")
 st.caption(
     "Copper, sulfur and silicon: the colour of the bulk solid under white light "
-    "is compared with a representative photon emitted by an excited neutral atom."
+    "is paired with a deliberately ordered teaching photon."
 )
 
 atomic_lab(data={"atoms": ATOMS}, key="main_atomic_lab", height="content", width="stretch")
@@ -279,9 +279,16 @@ with st.expander("What is real — and what the diagram simplifies", icon=":mate
         **The excitation cycle is physically meaningful.** An external energy source
         can promote an electron to an allowed excited state. When the atom relaxes,
         it emits a photon with energy equal to the energy-level difference:
-        \(E = hf = hc/\\lambda\). The displayed wavelengths are representative
-        observed lines of neutral atoms: Cu I 510.554 nm, S I 469.411 nm and
-        Si I 390.552 nm.
+        \(E = hf = hc/\\lambda\). The photon begins exactly where the animated
+        electron returns to its initial level.
+
+        **The three wavelengths are a didactic comparison, not three claimed
+        characteristic lines.** They are deliberately ordered as 620 nm
+        (red-orange), 580 nm (yellow) and 470 nm (blue), so that the animation makes
+        visible that red-orange has the longest wavelength and blue the shortest.
+        A single photon can have a spectral colour such as blue, but cannot literally
+        be grey; the 470 nm photon is therefore physically blue and is merely drawn
+        as a desaturated blue-grey to match the material card.
 
         **The picture remains a teaching model.** Electrons do not travel on literal
         planetary rings. The rings show shell populations clearly; real many-electron
