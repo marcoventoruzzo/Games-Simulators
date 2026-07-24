@@ -1,6 +1,3 @@
-Exit code: 0
-Wall time: 1.4 seconds
-Output:
 from __future__ import annotations
 
 import streamlit as st
@@ -23,10 +20,10 @@ ATOMS = [
         "symbol": "Cu",
         "atomic_number": 29,
         "shells": [2, 8, 18, 1],
-        "configuration": "[Ar] 3dÂ¹â° 4sÂ¹",
+        "configuration": "[Ar] 3d¹⁰ 4s¹",
         "material_color": "red-orange",
         "material_hex": "#b86238",
-        "line": "Cu I Â· representative visible line",
+        "line": "Cu I · representative visible line",
         "wavelength": 510.554,
         "energy": 2.43,
         "photon_color": "#42f58d",
@@ -39,10 +36,10 @@ ATOMS = [
         "symbol": "S",
         "atomic_number": 16,
         "shells": [2, 8, 6],
-        "configuration": "[Ne] 3sÂ² 3pâ´",
+        "configuration": "[Ne] 3s² 3p⁴",
         "material_color": "yellow",
         "material_hex": "#e7d43b",
-        "line": "S I Â· representative visible line",
+        "line": "S I · representative visible line",
         "wavelength": 469.411,
         "energy": 2.64,
         "photon_color": "#4f8cff",
@@ -55,10 +52,10 @@ ATOMS = [
         "symbol": "Si",
         "atomic_number": 14,
         "shells": [2, 8, 4],
-        "configuration": "[Ne] 3sÂ² 3pÂ²",
+        "configuration": "[Ne] 3s² 3p²",
         "material_color": "blue-grey",
         "material_hex": "#657786",
-        "line": "Si I Â· representative visible line",
+        "line": "Si I · representative visible line",
         "wavelength": 390.552,
         "energy": 3.17,
         "photon_color": "#8d5cff",
@@ -78,7 +75,7 @@ COMPONENT_HTML = """
     <div class="actions">
       <button id="all-atoms" type="button">Excite all atoms</button>
       <button id="pause" class="quiet" type="button" aria-pressed="false">Pause</button>
-      <label>Speed <output id="speed-label">1.0Ã—</output></label>
+      <label>Speed <output id="speed-label">1.0×</output></label>
       <input id="speed" type="range" min=".55" max="1.55" value="1" step=".05">
     </div>
   </header>
@@ -170,13 +167,13 @@ function svg(atom,index){
     <g class="energy-source"><line class="energy-arrow" x1="28" y1="151" x2="111" y2="151"/>
       <circle class="energy-packet" cx="38" cy="151" r="5"/></g>
     ${radii.map((r,i)=>`<ellipse class="orbit" cx="230" cy="151" rx="${r}" ry="${(r*.52).toFixed(1)}"/>
-      <text class="shell-label" x="${230+r-6}" y="${151-(r*.17)}">n=${i+1} Â· ${atom.shells[i]}eâ»</text>`).join('')}
+      <text class="shell-label" x="${230+r-6}" y="${151-(r*.17)}">n=${i+1} · ${atom.shells[i]}e⁻</text>`).join('')}
     <circle class="nucleus" cx="230" cy="151" r="24" fill="url(#n-${index})"/>
     <text class="nucleus-text" x="230" y="151">${atom.symbol}</text>
     ${electronMarkup(atom)}
     <g class="emission"><path class="wave"/><circle class="photon" r="5"/></g>
     <rect class="status-box" x="84" y="270" width="292" height="23" rx="12"/>
-    <text class="status" x="230" y="286">Ground configuration Â· waiting for excitation</text>
+    <text class="status" x="230" y="286">Ground configuration · waiting for excitation</text>
   </svg>`
 }
 
@@ -184,13 +181,13 @@ function card(atom,index){
   const el=document.createElement('article')
   el.className='atom-card';el.style.setProperty('--photon',atom.photon_color);el.style.setProperty('--glow',atom.glow)
   el.innerHTML=`<div class="card-head"><div class="identity"><span class="symbol">${atom.symbol}</span>
-    <div><h3>${atom.name} Â· Z=${atom.atomic_number}</h3><p>${atom.line}</p></div></div>
+    <div><h3>${atom.name} · Z=${atom.atomic_number}</h3><p>${atom.line}</p></div></div>
     <label class="toggle">Excite <input type="checkbox" aria-label="Excite ${atom.name} atom"></label></div>
     <div class="material-row"><span class="swatch" style="background:${atom.material_hex}"></span>
       Bulk solid in white light: <strong>${atom.material_color}</strong></div>
     ${svg(atom,index)}
     <div class="data">
-      <div class="datum"><span>Ground-state shell population</span><strong>${atom.shells.join('â€“')}</strong></div>
+      <div class="datum"><span>Ground-state shell population</span><strong>${atom.shells.join('–')}</strong></div>
       <div class="datum"><span>Electron configuration</span><strong>${atom.configuration}</strong></div>
       <div class="datum"><span>Emitted photon</span><strong class="live">${atom.wavelength.toFixed(3)} nm</strong></div>
       <div class="datum"><span>Photon energy</span><strong>${atom.energy.toFixed(2)} eV</strong></div>
@@ -215,9 +212,9 @@ function frame(state,now){
     const hx=Number(electron.dataset.homeX),hy=Number(electron.dataset.homeY)
     let ex=hx,ey=hy,text='External energy approaches',end=0
     if(t<.28){packet.style.opacity='1';packet.setAttribute('cx',38+(t/.28)*132)}
-    else if(t<.43){const p=(t-.28)/.15;packet.style.opacity=String(1-p);ex=hx+(hx-230)*.32*p;ey=hy+(hy-151)*.32*p;text='Energy absorbed Â· electron promoted'}
+    else if(t<.43){const p=(t-.28)/.15;packet.style.opacity=String(1-p);ex=hx+(hx-230)*.32*p;ey=hy+(hy-151)*.32*p;text='Energy absorbed · electron promoted'}
     else if(t<.60){packet.style.opacity='0';ex=hx+(hx-230)*.32;ey=hy+(hy-151)*.32;text='Atom in a short-lived excited state'}
-    else if(t<.73){const p=(t-.60)/.13;packet.style.opacity='0';ex=hx+(hx-230)*.32*(1-p);ey=hy+(hy-151)*.32*(1-p);end=278+p*30;text='Electron relaxes Â· photon emitted'}
+    else if(t<.73){const p=(t-.60)/.13;packet.style.opacity='0';ex=hx+(hx-230)*.32*(1-p);ey=hy+(hy-151)*.32*(1-p);end=278+p*30;text='Electron relaxes · photon emitted'}
     else{packet.style.opacity='0';end=308+((t-.73)/.27)*78;text=`${s.atom.wavelength.toFixed(3)} nm photon leaves the atom`}
     electron.setAttribute('cx',ex);electron.setAttribute('cy',ey)
     if(end){wave.style.opacity='1';photon.style.opacity='1';wave.setAttribute('d',wavePath(278,end,151,s.atom.wavelength,now/180));photon.setAttribute('cx',end);photon.setAttribute('cy',151)}
@@ -235,12 +232,12 @@ export default function(component){
   const cards=data.atoms.map((atom,index)=>{const el=card(atom,index);grid.appendChild(el);return{atom,el,on:false}})
   const state={cards,speed:1,paused:false,started:performance.now(),raf:0},handlers=[]
   cards.forEach(s=>{const input=s.el.querySelector('input');const fn=()=>{s.on=input.checked;s.el.classList.toggle('is-on',s.on)
-    if(!s.on){s.el.querySelector('.status').textContent='Ground configuration Â· waiting for excitation';s.el.querySelector('.stage').textContent='Waiting for excitation';s.el.querySelector('.wave').style.opacity='0';s.el.querySelector('.photon').style.opacity='0'}}
+    if(!s.on){s.el.querySelector('.status').textContent='Ground configuration · waiting for excitation';s.el.querySelector('.stage').textContent='Waiting for excitation';s.el.querySelector('.wave').style.opacity='0';s.el.querySelector('.photon').style.opacity='0'}}
     input.addEventListener('change',fn);handlers.push([input,'change',fn])})
   const all=root.querySelector('#all-atoms'),pause=root.querySelector('#pause'),speed=root.querySelector('#speed'),label=root.querySelector('#speed-label')
   const allFn=()=>{const on=cards.some(s=>!s.on);cards.forEach(s=>{const i=s.el.querySelector('input');i.checked=on;i.dispatchEvent(new Event('change'))});all.textContent=on?'Stop all atoms':'Excite all atoms'}
   const pauseFn=()=>{state.paused=!state.paused;pause.textContent=state.paused?'Resume':'Pause';pause.setAttribute('aria-pressed',String(state.paused));if(!state.paused){state.started=performance.now();state.raf=requestAnimationFrame(n=>frame(state,n))}}
-  const speedFn=()=>{state.speed=Number(speed.value);label.textContent=`${state.speed.toFixed(2).replace(/0$/,'')}Ã—`}
+  const speedFn=()=>{state.speed=Number(speed.value);label.textContent=`${state.speed.toFixed(2).replace(/0$/,'')}×`}
   all.addEventListener('click',allFn);pause.addEventListener('click',pauseFn);speed.addEventListener('input',speedFn)
   handlers.push([all,'click',allFn],[pause,'click',pauseFn],[speed,'input',speedFn])
   state.cleanup=()=>handlers.forEach(([el,type,fn])=>el.removeEventListener(type,fn))
@@ -266,7 +263,7 @@ st.caption(
 
 atomic_lab(data={"atoms": ATOMS}, key="main_atomic_lab", height="content", width="stretch")
 
-with st.expander("What is real â€” and what the diagram simplifies", icon=":material/science:"):
+with st.expander("What is real — and what the diagram simplifies", icon=":material/science:"):
     st.markdown(
         r"""
         **Two different phenomena are shown.** The red-orange of copper, yellow of
@@ -276,8 +273,8 @@ with st.expander("What is real â€” and what the diagram simplifies", icon="
         individual photons drawn in the emission animation.
 
         **The ground-state electron counts are real.** Neutral Cu, S and Si have,
-        respectively, shell populations 2â€“8â€“18â€“1, 2â€“8â€“6 and 2â€“8â€“4. Their compact
-        configurations are [Ar] 3dÂ¹â° 4sÂ¹, [Ne] 3sÂ² 3pâ´ and [Ne] 3sÂ² 3pÂ².
+        respectively, shell populations 2–8–18–1, 2–8–6 and 2–8–4. Their compact
+        configurations are [Ar] 3d¹⁰ 4s¹, [Ne] 3s² 3p⁴ and [Ne] 3s² 3p².
 
         **The excitation cycle is physically meaningful.** An external energy source
         can promote an electron to an allowed excited state. When the atom relaxes,
@@ -295,5 +292,4 @@ with st.expander("What is real â€” and what the diagram simplifies", icon="
         """
     )
 
-st.caption("Â© Marco Ventoruzzo 2026 Â· made with support from Codex")
-
+st.caption("© Marco Ventoruzzo 2026 · made with support from Codex")
