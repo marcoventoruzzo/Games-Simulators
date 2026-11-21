@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="An interactive Sun–Earth–Moon observatory with Python ephemerides for 1900–2100.">
+<title>Tellurium Lab</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<header>
+  <a class="brand" href="./" aria-label="Tellurium Lab home"><span class="mark" aria-hidden="true">◉</span> TELLURIUM<span class="brand-muted"> LAB</span></a>
+  <span id="status" role="status">Starting the ephemeris…</span>
+</header>
+<section class="intro">
+  <div><h1>Tellurium Lab</h1><p>Explore the moving geometry of the Sun, Earth, and Moon.</p></div>
+  <output id="stamp">1900–2100 <small>UTC</small></output>
+</section>
+<nav aria-label="Simulation views">
+  <button data-view="phases" aria-current="page">Lunar phases</button>
+  <button data-view="eclipse">Eclipses</button>
+  <button data-view="orbit">Around the Sun</button>
+</nav>
+<div class="layout">
+  <section class="instrument" aria-label="Orbital model">
+    <div class="scene-head">
+      <div><span class="eyebrow" id="frame-label">EARTH-CENTERED</span><h2 id="scene-title">The lunar cycle</h2></div>
+      <div class="camera" aria-label="Camera presets">
+        <button id="top">Top</button><button id="tilt" aria-pressed="true">Tilted</button><button id="edge">Edge</button>
+      </div>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="space" tabindex="0" aria-label="Interactive orbital model. Drag or use arrow keys to rotate. Use plus or minus to zoom."></canvas>
+      <span id="scale-note">Body sizes and distances enlarged for clarity</span>
+      <div class="zoom"><button id="minus" aria-label="Zoom out">−</button><button id="plus" aria-label="Zoom in">+</button></div>
+    </div>
+    <div class="timeline">
+      <div class="transport">
+        <button id="play" aria-label="Play">▶</button>
+        <button id="back" aria-label="Go back one day">−1d</button><button id="forward" aria-label="Go forward one day">+1d</button>
+        <label class="date-control">Date and time <input id="date" type="datetime-local" min="1900-01-01T00:00" max="2100-12-31T23:59" aria-label="Date and time in UTC"></label>
+        <label>Playback speed <select id="speed" aria-label="Playback speed"><option value=".083333333">2 hr/s</option><option value="1" selected>1 day/s</option><option value="6">6 days/s</option></select></label>
+        <button id="today">Now</button>
+      </div>
+      <label class="sr-only" for="scrub">Scrub around the selected date</label>
+      <input type="range" id="scrub" min="-360" max="360" step="1" value="0">
+      <div class="tick-labels"><span id="range-start"></span><span id="range-mid"></span><span id="range-end"></span></div>
+    </div>
+  </section>
+  <aside id="guide" aria-label="Explanation and examples"></aside>
+</div>
+<section id="sky" class="sky-panel" hidden aria-labelledby="sky-title">
+  <div class="sky-head"><div><span class="eyebrow">TOPOCENTRIC VIEW</span><h2 id="sky-title">From Earth</h2></div>
+  <div class="sky-controls">
+    <label>Observer <select id="place"><option value="45.4642,9.1900">Milan</option><option value="40.7128,-74.0060">New York</option><option value="-33.8688,151.2093">Sydney</option><option value="0,-78.45">Equator · Quito</option><option value="custom">Custom coordinates</option></select></label>
+    <button id="hide-sky">Close</button>
+  </div></div>
+  <div id="coords" hidden><label>Latitude <input id="lat" type="number" min="-90" max="90" step="any" value="45.4642"></label><label>Longitude <input id="lon" type="number" min="-180" max="180" step="any" value="9.19"></label></div>
+  <div class="sky-disc-row"><canvas class="disc" id="sky-disc" aria-label="Moon as seen from the selected location"></canvas><div id="sky-readout" class="sky-readout"></div></div>
+  <div class="sky-visuals">
+    <canvas id="sky-dome" aria-label="Overhead compass view of the sky above the horizon."></canvas>
+    <canvas id="sky-canvas" aria-label="Sun and Moon altitude through the observing window. Gold is Sun, blue is Moon."></canvas>
+  </div>
+  <label class="sr-only" for="day-scrub">Hours since the beginning of the observing window</label>
+  <input type="range" id="day-scrub" min="0" max="2160" step="1" value="0">
+  <div class="tick-labels"><span id="sky-start"></span><span id="sky-end"></span></div>
+  <p class="fine">Times are UTC. The 36-hour window follows the sky across midnight. Rise and set use a level horizon and standard refraction. Click the plot or drag the time slider.</p>
+</section>
+<footer><span>Python ephemeris · <a href="https://github.com/cosinekitty/astronomy">Astronomy Engine</a></span><a href="README.md">Methods & credits</a></footer>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>

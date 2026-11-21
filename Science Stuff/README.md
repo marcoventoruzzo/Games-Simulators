@@ -6,3 +6,5 @@ Two interactive, mobile-friendly physics laboratories by Marco Ventoruzzo:
 - **Diffraction & Young Lab** — compare a variable single slit with Young's double-slit interference and connect diffraction to Heisenberg uncertainty.
 
 Each folder is an independent Streamlit Community Cloud app with its own `streamlit_app.py` and `requirements.txt`.
+
+- **[Tellurium Lab](../Tellurium-Lab/)** — explore lunar phases, eclipses, and the Earth–Moon paths around the Sun with Python ephemerides.
