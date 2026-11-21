@@ -15,7 +15,7 @@ const configs={
 };
 let api, view='phases', selected=clamp(Date.now()), anchor=selected, dayStart=Math.floor(selected/DAY)*DAY;
 let camera={az:presets.tilt[0],el:presets.tilt[1],zoom:1},frame,sky,trajectory,trajectoryKey;
-let latitude=45.4642,longitude=9.19,gain=35,playing=false,timer,busy=false,pending=false,revision=0;
+let latitude=45.4642,longitude=9.19,gain=20,playing=false,timer,busy=false,pending=false,revision=0;
 let eventLabel='', skyKey='', drag=null;
 
 function status(message,kind=''){
@@ -75,7 +75,7 @@ const guides={
   orbit:`
     <div class="guide-card"><h3>Earth and Moon in motion</h3>
       <div class="metrics"><div class="metric"><strong id="earth-speed">—</strong>Earth vs. Sun</div><div class="metric"><strong id="moon-speed">—</strong>Moon vs. Earth</div></div>
-      <div class="actions" aria-label="Moon offset scale"><button data-gain="1">True scale</button><button data-gain="35">35× separation</button><button data-gain="80">80× separation</button></div>
+      <div class="actions" aria-label="Moon offset scale"><button data-gain="1">True scale</button><button data-gain="10">10× separation</button><button data-gain="20">20× separation</button></div>
       <p>Blue is Earth’s path. Gold is the Moon’s. Magnification expands only the Earth–Moon separation.</p>
     </div>
     <div class="guide-card"><h3>Why there are no loops</h3>
@@ -131,6 +131,7 @@ function setView(name){
     else button.removeAttribute('aria-current');
   }
   if(name!=='phases')$('sky').hidden=true;
+  if(name==='eclipse')$('speed').selectedIndex=0;
   const [label,title,note]=configs[name];
   $('frame-label').textContent=label;$('scene-title').textContent=title;$('scale-note').textContent=note;
   $('guide').innerHTML=guides[name];
