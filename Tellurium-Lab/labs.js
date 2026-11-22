@@ -135,9 +135,11 @@ function analemma(root,api,initialYear){
 
 function skyLab(root){
   root.innerHTML='<div class="lab-stack">'+card('Why is the sky blue?',
-    '<p>Air molecules redirect sunlight in many directions. This is <strong>Rayleigh scattering</strong>. For visible light, shorter wavelengths scatter much more strongly than longer ones. The scattered light reaches your eyes from across the sky.</p>'+
+    '<p>Scattering means light leaves its original direction. A passing light wave makes electric charges in an air molecule wiggle. The molecule sends a little light out in new directions. Shorter waves do this more effectively. Blue is more likely to be redirected because the molecule responds more strongly to its higher frequency.</p>'+
     slider('wave','Follow one wavelength',400,700,450)+out('scatter')+
-    canvas('rays','Direct beam and light scattered by air molecules')+
+    canvas('rays','One beam of sunlight, a molecule, and scattered rays reaching an eye')+
+    canvas('wave-size','Blue and red wavelengths on the same scale compared with a nitrogen molecule')+
+    '<p>A nitrogen molecule is roughly 0.3 nm across. Blue light at 450 nm has a wavelength about 1,500 times longer. Red at 650 nm is about 2,200 times longer. Under Rayleigh scattering the blue example is redirected about 4.4 times as strongly as the red example.</p>'+
     '<details><summary>Compare with diffraction</summary><p>A diffraction grating has regularly spaced grooves. Waves from the grooves reinforce each other at particular angles. In the first order, red bends through a larger angle than blue. Air molecules scatter light without this regular pattern.</p>'+
     canvas('grating','A diffraction grating separates blue, green and red into different angles')+'</details>'+
     '<details><summary>Why blue rather than violet?</summary><p>Violet scatters even more strongly. The color we see is the sum of the spectrum and the response of our eyes, which are much less sensitive to violet.</p></details>')+
@@ -147,8 +149,13 @@ function skyLab(root){
     card('What color is the Sun from space?',
     '<p><strong>White to human eyes.</strong> The Sun emits across the visible spectrum. Those wavelengths combine to make nearly white light outside the atmosphere. Through air its direct light can look warmer, especially at low elevation. A white disk represents the combined light.</p>'+
     slider('rocket-alt','Rocket altitude (km)',0,150,0)+out('rocket-read')+canvas('rocket','Rocket climbing from its launch gantry beside a view of the Sun')+
-    '<p>The color change is exaggerated. Even at ground level, a high Sun can look nearly white. The atmosphere thins gradually, so the white disk emerges gradually too.</p>')+'</div>';
+    '<p>The color change is exaggerated. Even at ground level, a high Sun can look nearly white. The atmosphere thins gradually, so the white disk emerges gradually too.</p>')+card('How a rainbow follows you',
+    '<p>With the Sun behind you, some sunlight bends as it enters a drop, reflects once off the back, and bends again as it leaves. Water bends violet more than red. The brightest rays reach your eye about 40° (violet) to 42° (red) from the direction opposite the Sun.</p>'+
+    '<div class="lab-rows">'+canvas('drop','Refraction, one internal reflection, and dispersion in a raindrop')+canvas('bow','Rainbow circle centered on the direction opposite the Sun')+'</div>'+
+    slider('bow-view','Raise the viewpoint above the ground (illustrative)',0,100,0)+out('bow-note')+
+    '<p>Every point on the bow comes from a different drop at the right angle to your eye. Together those sight lines form a cone, whose opening looks like a circle. Ground and the horizon often hide the lower part. Drive forward and your cone moves with you, selecting other drops. The bow has a direction but no fixed location you can reach.</p>')+'</div>';
   return attach(root,()=>{
+    drawRainbow(root);
     const wave=+$(root,'wave').value, strength=(550/wave)**4;
     $(root,'scatter').textContent=wave+' nm · '+strength.toFixed(2)+'× the scattering at 550 nm';
     const env=canvasContext($(root,'rays'));
@@ -156,25 +163,34 @@ function skyLab(root){
       const {ctx:c,w,h}=env;
       background(c,w,h,'#091224','#173a69');
       c.fillStyle='#79b5ff20';c.fillRect(0,h*.21,w,h*.69);
-      const start=[w*.20,h*.12], end=[w*.38,h*.84], eye=[w*.80,h*.80];
-      shot(c,...start,7,true);
-      line(c,start,end,'#fff4d6',4);
-      line(c,[0,h*.21],[w,h*.21],'#a7caff88');
-      text(c,'Atmosphere',w*.72,h*.18,cyan);
-      text(c,'Direct sunlight',w*.18,h*.94);
-      for(const [i,nm] of [450,550,650].entries()){
-        const f=.32+i*.15,x=start[0]+f*(end[0]-start[0]),y=start[1]+f*(end[1]-start[1]);
-        const k=(450/nm)**4;
-        dot(c,x,y,4,ink);
-        line(c,[x,y],eye,waveColor(nm),1+5*k);
-        line(c,[x,y],[x-w*.13,y+h*.12],waveColor(nm),1+2*k);
-        text(c,nm+' nm',x+w*.22,y+h*.035,waveColor(nm));
+      const start=[w*.18,h*.12], atom=[w*.47,h*.45], eye=[w*.76,h*.82];
+      shot(c,...start,8,true);
+      text(c,'Sunlight',start[0],start[1]+25);
+      line(c,start,atom,'#fff4d6',4);
+      line(c,atom,[w*.80,h*.69],'#fff4d684',2.5);
+      line(c,[0,h*.23],[w,h*.23],'#a7caff88');
+      text(c,'Air',w*.87,h*.20,cyan);
+      const col=waveColor(wave);
+      for(const angle of [-1.6,-.92,-.28,2.52,3.2,4.02]){
+        const len=Math.min(w,h)*.16;
+        line(c,atom,[atom[0]+len*Math.cos(angle),atom[1]+len*Math.sin(angle)],col,Math.min(4,.7+strength));
       }
-      c.setLineDash([4,5]);
-      line(c,[end[0]-.02*w,end[1]-15],eye,waveColor(wave),1+Math.min(3,strength));
-      c.setLineDash([]);
-      dot(c,...eye,6,'#bce5ff');
-      text(c,'Eye looking at sky',eye[0],eye[1]+24,ink);
+      line(c,atom,eye,col,Math.min(6,1+strength*1.45));
+      dot(c,...atom,7,ink);text(c,'Air molecule',atom[0],atom[1]-13);
+      c.strokeStyle=ink;c.beginPath();c.ellipse(...eye,12,6,0,0,2*Math.PI);c.stroke();
+      dot(c,...eye,3,col);text(c,'Observer looking at sky',eye[0]-6,eye[1]+24);
+    }
+    const sizes=canvasContext($(root,'wave-size'));
+    if(sizes){
+      const {ctx:c,w,h}=sizes; background(c,w,h);
+      const scale=w*.76/650,x=w*.12;
+      for(const [nm,y] of [[450,h*.27],[650,h*.58]]){
+        path(c,Array.from({length:81},(_,i)=>[x+i*nm*scale/80,y-15*Math.sin(i*Math.PI/40)]),waveColor(nm),2.4);
+        line(c,[x,y+23],[x+nm*scale,y+23],muted);
+        text(c,nm+' nm · one wavelength',x+nm*scale/2,y+42);
+      }
+      dot(c,x,h*.91,2.5,ink);
+      text(c,'N₂ ≈ 0.3 nm · dot enlarged to be visible',x+9,h*.91+4,ink,'left');
     }
     const grating=canvasContext($(root,'grating'));
     if(grating){
@@ -240,15 +256,70 @@ function skyLab(root){
   });
 }
 
+function drawRainbow(root){
+  const height=+$(root,'bow-view').value;
+  $(root,'bow-note').textContent=height===0?'Ground view · part of the circle is hidden':height===100?'Elevated view · full circle if drops are present below you':'Elevated view · more of the circle can be visible';
+  const drop=canvasContext($(root,'drop'));
+  if(drop){
+    const {ctx:c,w,h}=drop; background(c,w,h);
+    const r=Math.min(w,h)*.25,x=w*.60,y=h*.47;
+    const point=a=>[x+r*Math.cos(a),y+r*Math.sin(a)];
+    const g=c.createRadialGradient(x-r*.3,y-r*.4,1,x,y,r);
+    g.addColorStop(0,'#5cb7faaa');g.addColorStop(1,'#184273aa');dot(c,x,y,r,g);
+    c.strokeStyle=cyan;c.beginPath();c.arc(x,y,r,0,2*Math.PI);c.stroke();
+    const entry=point(-2.24);
+    line(c,[w*.10,h*.18],entry,'#fff1c6',3);
+    for(const [i,color] of ['#ff6464','#ffc661','#7de997','#68b3ff','#b298ff'].entries()){
+      const back=point(-.02+i*.037), exit=point(1.90+i*.030);
+      path(c,[entry,back,exit,[w*.10,h*(.75-i*.023)]],color,1.6);
+    }
+    text(c,'Sunlight',w*.16,h*.13);
+    text(c,'Inside reflection',x,h*.82,ink);
+    text(c,'Colors leave at different angles',w*.50,h*.94,ink);
+  }
+  const sky=canvasContext($(root,'bow'));
+  if(sky){
+    const {ctx:c,w,h}=sky; background(c,w,h,'#17355f','#334552');
+    const x=w/2,y=h*.52,r=Math.min(w*.33,h*.34), horizon=y+r*(-.08+height*.013);
+    c.save();c.beginPath();c.rect(0,0,w,horizon);c.clip();
+    ['#ba82ef','#7288ff','#69d7ff','#7ae2a2','#f2e981','#ffb871','#ff7676'].forEach((color,i)=>{
+      c.strokeStyle=color;c.lineWidth=3;c.beginPath();c.arc(x,y,r+i*2-6,0,Math.PI*2);c.stroke();
+    });
+    c.restore();
+    if(height<100){line(c,[0,horizon],[w,horizon],muted);}
+    dot(c,x,y,3,ink);text(c,'Opposite the Sun',x,y-9);
+    text(c,'Red outer edge ≈ 42°',x,h-13);
+  }
+}
+
 const starExamples=[
  ['Sun ☉',5772,0,'#ffe2a5',9,-9],['Proxima Centauri',3050,-2.8,'#ff967b',-7,-10],
  ['Sirius A',9940,1.4,'#b6d9ff',8,-9],['Betelgeuse',3600,5.0,'#ff9a7b',-7,-9],
  ['Sirius B',25000,-1.6,'#d4ecff',8,13]
 ];
+const solarTrack=[
+  [0,3500,.65,'Formation in a collapsing cloud'],
+  [.05,5600,-.16,'Hydrogen fusion begins'],
+  [4.57,5772,0,'The Sun today'],
+  [10.5,5500,.38,'Hydrogen runs low in the core'],
+  [12.1,3100,3.0,'Red giant'],
+  [12.2,4800,1.8,'Helium fusion in the core'],
+  [12.35,2850,3.65,'Late giant and envelope loss'],
+  [12.36,90000,3.20,'Hot exposed core and planetary nebula'],
+  [12.45,37000,-1.15,'White dwarf'],
+  [20,6500,-3.75,'White dwarf cooling']
+];
+function arrowPath(c,points,color){
+  path(c,points,color,1.5);
+  const [a,b]=points.slice(-2), theta=Math.atan2(b[1]-a[1],b[0]-a[0]);
+  for(const d of [-.5,.5])line(c,b,[b[0]-7*Math.cos(theta+d),b[1]-7*Math.sin(theta+d)],color,1.5);
+}
 function starLab(root){
   root.innerHTML=card('The Hertzsprung–Russell diagram',
     '<p>Hotter stars are on the left. More luminous stars are higher up. The labeled points show familiar stars at their approximate present-day positions.</p>'+
-    canvas('hr','Static Hertzsprung–Russell diagram showing the main sequence, giants, supergiants, and white dwarfs',true)+
+    canvas('hr','Hertzsprung–Russell diagram with stellar populations and the evolutionary path of the Sun',true)+
+    '<div class="lab-actions"><button id="sun-play">Play</button></div>'+slider('sun-age','Age since formation (billion years)',0,20,0,.01)+out('sun-stage')+
+    '<p>Gold arrows trace the Sun. Faint blue arrows show one possible path for a massive star. Ages and tracks are illustrative, especially during the brief late stages. The Sun’s white dwarf will keep cooling beyond the end of this timeline.</p>'+
     '<div class="lab-rows"><div><h3>Sun-like stars</h3><p>Hydrogen fusion on the main sequence → red giant → gas shed into space → white dwarf. Sirius B is a white dwarf.</p></div>'+
     '<div><h3>Massive stars</h3><p>Short-lived hot main-sequence star → evolved giant or stripped star → core collapse. A neutron star can remain, or a black hole can form. The outcome depends on the final core, mass loss and companions.</p></div></div>');
   const draw=()=>{
@@ -256,9 +327,9 @@ function starLab(root){
     const {ctx:c,w,h}=env;
     const left=49,right=w-26,top=25,bottom=h-44;
     const x=v=>left+(Math.log10(100000)-Math.log10(v))/(5-Math.log10(2500))*(right-left);
-    const y=v=>top+(6-v)/10*(bottom-top);
+    const y=v=>top+(7-v)/12*(bottom-top);
     background(c,w,h);
-    for(const k of [-4,-2,0,2,4,6]){
+    for(const k of [-5,-3,-1,0,1,3,5,7]){
       line(c,[left,y(k)],[right,y(k)]);text(c,'10^'+k,left-6,y(k)+4,muted,'right');
     }
     const ticks=w<520?[100000,20000,6000,2500]:[100000,30000,10000,6000,4000,2500];
@@ -267,19 +338,68 @@ function starLab(root){
     }
     text(c,'Surface temperature (K)',w*.55,h-7,ink);
     text(c,'Luminosity (Sun = 1)',left,15,ink,'left');
-    path(c,[[38000,5.3],[22000,4],[10000,1.6],[5772,0],[3900,-1.25],[2800,-3.4]].map(([v,l])=>[x(v),y(l)]),'#7594c367',12);
-    text(c,'Main sequence',x(12500),y(2.5)+16,muted);
-    path(c,[[7500,1.6],[5400,2.0],[3500,3.1]].map(([v,l])=>[x(v),y(l)]),'#efad8160',20);
-    path(c,[[30000,5.4],[6000,5.2],[3400,5.1]].map(([v,l])=>[x(v),y(l)]),'#efad8160',15);
-    path(c,[[58000,-.3],[25000,-1.6],[6500,-3.3]].map(([v,l])=>[x(v),y(l)]),'#8dcded60',16);
-    text(c,'Giants',x(4400),y(2.8)-8,muted);
-    text(c,'Supergiants',x(11000),y(5.25)+20,muted);
-    text(c,'White dwarfs',x(19000),y(-2.5)+12,muted);
+    const bands=[
+      ['Main sequence',[[44000,5.6],[22000,4],[10000,1.6],[5772,0],[3900,-1.25],[2600,-4.2]]],
+      ['Giants',[[7500,1.6],[5400,2.0],[3200,3.1]]],
+      ['Supergiants',[[30000,5.7],[6000,5.2],[3400,5.1]]],
+      ['White dwarfs',[[58000,-.7],[25000,-1.6],[6500,-3.8]]]
+    ];
+    for(const [name,points] of bands){
+      path(c,points.map(([v,l])=>[x(v),y(l)]),'#9dbafe33',16);
+      for(let i=1;i<points.length;i++){
+        const [t0,l0]=points[i-1],[t1,l1]=points[i];
+        for(let j=0;j<6;j++){
+          const f=j/6,t=t0*(t1/t0)**f,l=l0+(l1-l0)*f;
+          const hue=Math.max(4,Math.min(215,4+210*Math.log(t/2800)/2.7));
+          dot(c,x(t),y(l)+4*Math.sin(j*7+i),name==='Supergiants'?4.4:2.6,'hsl('+hue+' 82% 70% / .71)');
+        }
+      }
+    }
+    text(c,'Main sequence',x(18000),y(2.6)+17,muted);
+    text(c,'Giants',x(4650),y(3.5),muted);
+    text(c,'Supergiants',x(10000),y(5.5)-8,muted);
+    text(c,'White dwarfs',x(23000),y(-3.2),muted);
+    for(const r of [.01,1,100,1000]){
+      const pts=Array.from({length:70},(_,i)=>2500*(100000/2500)**(i/69))
+        .map(t=>[t,2*Math.log10(r)+4*Math.log10(t/5772)]).filter(([,l])=>l>=-5&&l<=7);
+      c.setLineDash([3,4]);path(c,pts.map(([t,l])=>[x(t),y(l)]),'#ceddf443');c.setLineDash([]);
+    }
+    const coord=([t,l])=>[x(t),y(l)];
+    const track=solarTrack.map(([,t,l])=>coord([t,l]));
+    arrowPath(c,[[30000,4.7],[12500,4.95],[3700,5.05]].map(coord),'#96c5fb9e');
+    for(let i=1;i<track.length;i++)arrowPath(c,track.slice(i-1,i+1),'#ffd087b5');
     for(const [n,v,l,col,dx,dy] of starExamples){
       dot(c,x(v),y(l),3.6,col);text(c,n,x(v)+dx,y(l)+dy,col,dx<0?'right':'left');
     }
+    const age=+$(root,'sun-age').value;
+    const next=solarTrack.findIndex(([t])=>t>age), j=next===-1?solarTrack.length-2:next-1;
+    const [start,,,stage]=solarTrack[j], end=solarTrack[j+1][0], f=(age-start)/(end-start);
+    const point=track[j].map((v,k)=>v+(track[j+1][k]-v)*f);
+    shot(c,...point,5,true);
+    $(root,'sun-stage').textContent=age.toFixed(2)+' billion years · '+(age===20?solarTrack.at(-1)[3]:stage);
   };
-  return attach(root,draw);
+  const detach=attach(root,draw), input=$(root,'sun-age');
+  let index=0, playing=false, age=0;
+  const go=$(root,'sun-play');
+  const dispose=clock(go,()=>{
+    const end=solarTrack[index+1][0], start=solarTrack[index][0];
+    const next=Math.min(end,age+(end-start)/14);age=next;
+    input.value=next.toFixed(2);draw();
+    if(next>=end-1e-9){
+      if(++index===solarTrack.length-1){go.click();}
+    }
+  });
+  go.addEventListener('click',()=>{
+    if(!playing){
+      if(+input.value>=20)input.value=0;
+      age=+input.value;
+      index=Math.max(0,solarTrack.findIndex(([t])=>t>age)-1);
+      draw();
+    }
+    playing=!playing;
+  });
+  input.addEventListener('input',()=>{if(playing)go.click();});
+  return ()=>{detach();dispose();};
 }
 
 const hydrogen=[410.2,434.0,486.1,656.28], sodium=[588.995,589.592], calcium=[393.37,396.85];
@@ -337,7 +457,7 @@ function darkLab(root){
     slider('shells','Layers of distance included',1,18,12)+out('dark-read')+'<div class="lab-rows">'+canvas('shellview','Illustrative contributions to sky brightness from equally thick layers')+
     canvas('nightfield','Illustrative sky becoming brighter as more shells of stars contribute')+'</div>'+
     '<p>Light travels at a finite speed. Very distant light takes longer to arrive. There was an era before the first stars, so the observed sky cannot accumulate light from infinitely many layers of shining stars. Expansion also redshifts light and reduces energy arrival rates.</p>'+
-    '<details><summary>What our eyes miss</summary><p>Most stars are too distant and faint to see individually with the unaided eye. The sky still glows at wavelengths we cannot see. The early universe fills the sky with the cosmic microwave background. The bars compare shell contributions before stellar disks overlap, with an illustrative horizon and fading curve.</p></details>');
+    '<details><summary>What our eyes miss</summary><p>Most stars are too distant and faint to see individually with the unaided eye. The sky still glows at wavelengths we cannot see. The early universe fills the sky with the cosmic microwave background. The bars compare shell contributions before stellar disks overlap. In the eternal model the final view illustrates the limiting case, in which every sight line ends on a stellar surface. Disk sizes and the number of layers needed to fill the view are illustrative.</p></details>');
   return attach(root,()=>{
     const n=+$(root,'shells').value, real=$(root,'universe').value==='real';
     const env=canvasContext($(root,'shellview'));if(!env)return;
@@ -348,12 +468,23 @@ function darkLab(root){
     const field=canvasContext($(root,'nightfield'));
     if(field){
       const {ctx:sc,w:sw,h:sh}=field;
-      const glow=Math.min(1,total/(real?35:18));
-      background(sc,sw,sh,'rgb('+[5+235*glow,11+205*glow,25+145*glow].map(Math.round).join(',')+')','#101a30');
+      background(sc,sw,sh,'#040815','#091425');
       const rand=i=>Math.abs(Math.sin(i*127.1)*43758.5453)%1;
-      for(let i=1;i<=Math.min(360,(real?Math.min(n,9):n)*20);i++){
-        dot(sc,rand(i)*sw,rand(i+301)*sh,.45+rand(i+990)*1.1,'#fdf2dbac');
+      if(real){
+        for(let i=1;i<=Math.min(n,9)*20;i++)dot(sc,rand(i)*sw,rand(i+301)*sh,.5+rand(i+990),'#fdf2dbac');
+      }else{
+        const radius=Math.max(2,sw/60), count=Math.round(5*(Math.exp(n*.45)-1));
+        const colors=['#ffe19b','#ffd2a8','#fff5da','#e5edff','#f7e5ce'];
+        // At the final setting, a dense, overlapping set of apparent disks realizes the limit.
+        const pitch=radius, cols=Math.ceil(sw/pitch)+3, rows=Math.ceil(sh/pitch)+3;
+        if(n===18){
+          for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
+            const k=j*cols+i;
+            dot(sc,(i-1+rand(k)*.35)*pitch,(j-1+rand(k+55)*.35)*pitch,radius,colors[k%colors.length]);
+          }
+        }else for(let i=1;i<=count;i++)dot(sc,rand(i)*sw,rand(i+301)*sh,radius,colors[i%colors.length]);
       }
+      sc.fillStyle='#111a2bbf';sc.fillRect(0,sh-31,sw,31);
       text(sc,'Illustrative sky · '+(real?'finite history':'eternal and static'),sw/2,sh-14);
     }
     const bw=(w-66)/18, base=h-43;
@@ -368,12 +499,13 @@ function darkLab(root){
   });
 }
 
+const frac=(top,bottom)=>'<span class="fraction"><span>'+top+'</span><span>'+bottom+'</span></span>';
 function measureLab(root){
   root.innerHTML='<div class="lab-stack">'+card('Find a star’s distance by parallax',
     '<p>Observe a nearby star twice, six months apart. Earth’s two observing positions are about 2 AU apart. The star shifts against distant background stars. Half the apparent shift is the parallax angle <i>p</i>. Its distance in parsecs is <strong>1 ÷ p</strong>, when <i>p</i> is in arcseconds.</p>'+
     slider('distance','Model distance (parsecs)',1,50,5)+out('parallax')+
     '<div class="lab-rows">'+canvas('triangle','Two sightings, reference stars, and the angle p at the nearby star')+
-    '<div><h3>One right triangle</h3><p><strong>tan p = 1 AU / d</strong>, so <strong>d = 1 AU / tan p</strong>. The known short side is half of Earth’s orbital baseline. The unknown long side is the distance to the star. For tiny angles this gives <strong>d(pc) ≈ 1 / p(arcsec)</strong>.</p><p>The fixed background stars give both exposures the same coordinate grid. Measure the shift against that grid. In this symmetric setup, half the shift equals angle p at the star.</p></div></div>'+
+    '<div><h3>One right triangle</h3><div id="live-parallax" class="display-math"></div><p><strong>tan p = 1 AU / d</strong>, so <strong>d = 1 AU / tan p</strong>. The known short side is half of Earth’s orbital baseline. The unknown long side is the distance to the star. For tiny angles this gives <strong>d(pc) ≈ 1 / p(arcsec)</strong>.</p><p>The fixed background stars give both exposures the same coordinate grid. Measure the shift against that grid. In this symmetric setup, half the shift equals angle p at the star.</p></div></div>'+
     '<p>The angle is greatly enlarged. One parsec is about 3.26 light-years.</p><h3>When the shift is too small</h3><p>Compare how bright a star appears with how much energy it really emits. A star of known luminosity appears four times fainter at twice the distance. For Cepheid variables, the pulsation period gives a calibrated luminosity. For other stars, temperature, spectra and stellar models can help estimate luminosity. Astronomers correct for dust, which also makes stars look fainter.</p>')+
     card('Identify the elements in a star',
     '<p>A spectrograph spreads light into a rainbow. Each atom can gain or lose only certain amounts of energy. That fixes which wavelengths it can absorb or emit, giving each element a pattern you can match to a lab spectrum.</p><p><strong>Absorption:</strong> when a hot stellar surface shines through cooler gas, the gas removes some colors from the beam. They show up as dark lines. <strong>Emission:</strong> excited atoms in a thin glowing gas give off light at specific wavelengths. Those same transitions can show up as bright lines. The <strong>same spectrograph</strong> can record both. What changes is the source of light.</p>'+
@@ -384,6 +516,8 @@ function measureLab(root){
     '<details><summary>What line strengths tell us</summary><p>Abundances come from fitting line strengths and profiles with model atmospheres. Temperature, ionization, density and blends affect the lines. Astronomers also correct for Doppler shifts before matching wavelengths.</p></details>')+'</div>';
   return attach(root,()=>{
     const d=+$(root,'distance').value;
+    const p=(1/d).toFixed(5);
+    $(root,'live-parallax').innerHTML='d ≈ '+frac('1',p)+' pc = '+d+' pc';
     $(root,'parallax').textContent=d+' pc · '+(d*3.26156).toFixed(1)+' light-years · p = '+(1/d).toFixed(3)+' arcsec';
     const env=canvasContext($(root,'triangle'));
     if(env){
@@ -453,7 +587,8 @@ function lightSpeedLab(root){
     '<div class="lab-actions">'+select('particle','Particle',[['massive','Has mass'],['photon','Photon · zero rest mass']])+'</div>'+
     slider('impulse','Momentum, in units of a fixed reference mass times c',0,10,2,.1)+out('relativity')+
     canvas('limit','Massive-particle speed approaches the speed of light, while photon speed stays at c')+
-    '<p class="lab-readout"><strong>E² = (mc²)² + (pc)²</strong> &nbsp; · &nbsp; <strong>v = pc²/E</strong></p>'+
+    '<div class="display-math"><span>E² = (mc²)² + (pc)²</span><span>v = '+frac('pc²','E')+'</span></div>'+
+    '<p><strong>Momentum</strong> is the quantity of motion. It has a direction. At ordinary speeds its magnitude is mass × speed. Near light speed a massive body follows <em>p = γmv</em>. Light also carries momentum, so it can push on a surface.</p>'+
     '<p><strong>E</strong> is total energy, <strong>m</strong> is rest mass, and <strong>p</strong> is the magnitude of momentum. For an object at rest, p = 0, and the relation reduces to <strong>E = mc²</strong>. For a photon, m = 0, so <strong>E = pc</strong>. Substituting into the velocity formula gives <strong>v = c</strong> for any photon with nonzero energy. A massive particle has E &gt; pc and therefore v &lt; c. Adding momentum gets it closer to c and requires ever more energy.</p>')+
     card('Where the number comes from',
     '<p>The equation establishes the relationship among energy, momentum, mass, and speed. Its symbols alone cannot give a numerical value for c. Time-of-flight measurements compare a known distance with the travel time of a light pulse. Today the SI defines the meter using the fixed vacuum value <strong>299,792,458 meters per second</strong>, about <strong>300,000 km/s</strong>.</p>'+
@@ -465,7 +600,7 @@ function lightSpeedLab(root){
     if(photon&&+input.value===0)input.value=.1;
     const p=+input.value, energy=Math.hypot(photon?0:1,p), v=p/energy;
     $(root,'relativity').textContent='v = '+v.toFixed(4)+' c · E = '+energy.toFixed(2)+' reference energy units';
-    $(root,'flight').textContent=(+$(root,'distance-light').value).toLocaleString('en-US')+' km ÷ 299,792.458 km/s = '+(+$(root,'distance-light').value/299792.458).toFixed(5)+' seconds';
+    $(root,'flight').innerHTML='t = '+frac((+$(root,'distance-light').value).toLocaleString('en-US')+' km','299,792.458 km/s')+' = '+(+$(root,'distance-light').value/299792.458).toFixed(5)+' s';
     const env=canvasContext($(root,'limit'));if(!env)return;
     const {ctx:c,w,h}=env; background(c,w,h);
     const x=k=>42+k*(w-66)/10,y=k=>h-40-k*(h-75);
