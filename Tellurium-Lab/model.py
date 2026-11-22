@@ -368,3 +368,26 @@ def precession_sky(date):
 
 
 OPERATIONS['precession'] = precession_sky
+
+
+@lru_cache(maxsize=1)
+def jupiter_retrograde():
+    """Nightly apparent positions in a fixed equatorial frame."""
+    start = ae.Time('2025-10-24T22:00:00Z')
+    observer = ae.Observer(45.4642, 9.19, 0)
+    jupiter = ae.Body.Jupiter
+    samples = []
+    for day in range(170):
+        t = start.AddDays(day)
+        eq = ae.EquatorFromVector(ae.GeoVector(jupiter, t, True))
+        samples.append([iso(t), eq.ra*15, eq.dec, earth_at(t),
+                        ecliptic(ae.HelioVector(jupiter, t)), horizontal(jupiter, t, observer)[1]])
+    opposition = ae.SearchRelativeLongitude(jupiter, 0, start)
+    stars = [[name, [[ra*15, dec] for ra, dec in ZODIAC_STARS[name]]]
+             for name in ('Taurus', 'Gemini', 'Cancer', 'Leo')]
+    stars.append(['Gemini field', [[102.458, 20.57], [103.197, 33.961], [105.603, 24.215],
+                                    [107.784, 30.245], [109.523, 16.54], [113.981, 26.896]]])
+    return dict(samples=samples, opposition=iso(opposition), stars=stars)
+
+
+OPERATIONS['jupiter_retrograde'] = jupiter_retrograde

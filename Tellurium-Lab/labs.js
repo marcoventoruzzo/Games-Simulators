@@ -323,10 +323,11 @@ function arrowPath(c,points,color){
 }
 function starLab(root){
   root.innerHTML=card('The Hertzsprung–Russell diagram',
-    '<p>Hotter stars are on the left. More luminous stars are higher up. The labeled points show familiar stars at their approximate present-day positions.</p>'+
+    '<p><strong>Start with one dot.</strong> Find Sirius A. Its position tells you two things: its surface is hotter than the Sun’s (farther left), and it gives off more light in total (higher up). The axes measure temperature and luminosity. Time enters only when you follow an individual star.</p>'+
+    '<ul class="hr-key"><li><span class="hr-population"></span><strong>Shaded bands</strong> show where many stars fall on this map. Think of a snapshot of many stars at different stages of life.</li><li><span class="hr-track"></span><strong>Gold arrows</strong> show the modeled life of one star, the Sun. Turn on its track or press Play to follow it.</li></ul>'+
     canvas('hr','Hertzsprung–Russell diagram with stellar populations and the evolutionary path of the Sun',true)+
-    '<div class="lab-actions"><button id="sun-play">Play</button></div>'+slider('sun-age','Age since formation (billion years)',0,20,0,.01)+out('sun-stage')+
-    '<p>Gold arrows trace the Sun. Faint blue arrows show one possible path for a massive star. Ages and tracks are illustrative, especially during the brief late stages. The Sun’s white dwarf will keep cooling beyond the end of this timeline.</p>'+
+    '<div class="lab-actions"><button id="sun-play">Play the Sun’s life</button><label><input id="hr-track" type="checkbox"> Show the Sun’s life track</label></div>'+slider('sun-age','Sun’s age (billion years)',0,20,4.57,.01)+out('sun-stage')+
+    '<p>The diagonal <strong>main sequence</strong> contains stars fusing hydrogen in their cores. Mass largely determines where a star settles on it. The Sun spends most of its life near its current spot. Later it moves up and right as a cooler, brighter giant. After shedding its outer layers, the hot remnant moves down into the white-dwarf region and gradually cools. The track and ages are approximate.</p>'+
     '<div class="lab-rows"><div><h3>Sun-like stars</h3><p>Hydrogen fusion on the main sequence → red giant → gas shed into space → white dwarf. Sirius B is a white dwarf.</p></div>'+
     '<div><h3>Massive stars</h3><p>Short-lived hot main-sequence star → evolved giant or stripped star → core collapse. A neutron star can remain, or a black hole can form. The outcome depends on the final core, mass loss and companions.</p></div></div>');
   const draw=()=>{
@@ -343,8 +344,8 @@ function starLab(root){
     for(const k of ticks){
       line(c,[x(k),top],[x(k),bottom]);text(c,k.toLocaleString('en-US'),x(k),bottom+17,muted);
     }
-    text(c,'Surface temperature (K)',w*.55,h-7,ink);
-    text(c,'Luminosity (Sun = 1)',left,15,ink,'left');
+    text(c,'Hotter ← Surface temperature (K) → Cooler',w*.54,h-7,ink);
+    text(c,'Brighter ↑ Luminosity (Sun = 1)',left,15,ink,'left');
     const bands=[
       ['Main sequence',[[44000,5.6],[22000,4],[10000,1.6],[5772,0],[3900,-1.25],[2600,-4.2]]],
       ['Giants',[[7500,1.6],[5400,2.0],[3200,3.1]]],
@@ -366,15 +367,12 @@ function starLab(root){
     text(c,'Giants',x(4650),y(3.5),muted);
     text(c,'Supergiants',x(10000),y(5.5)-8,muted);
     text(c,'White dwarfs',x(23000),y(-3.2),muted);
-    for(const r of [.01,1,100,1000]){
-      const pts=Array.from({length:70},(_,i)=>2500*(100000/2500)**(i/69))
-        .map(t=>[t,2*Math.log10(r)+4*Math.log10(t/5772)]).filter(([,l])=>l>=-5&&l<=7);
-      c.setLineDash([3,4]);path(c,pts.map(([t,l])=>[x(t),y(l)]),'#ceddf443');c.setLineDash([]);
-    }
     const coord=([t,l])=>[x(t),y(l)];
     const track=solarTrack.map(([,t,l])=>coord([t,l]));
-    arrowPath(c,[[30000,4.7],[12500,4.95],[3700,5.05]].map(coord),'#96c5fb9e');
-    for(let i=1;i<track.length;i++)arrowPath(c,track.slice(i-1,i+1),'#ffd087b5');
+    const showTrack=$(root,'hr-track').checked;
+    if(showTrack){
+      for(let i=1;i<track.length;i++)arrowPath(c,track.slice(i-1,i+1),'#ffd087');
+    }
     for(const [n,v,l,col,dx,dy] of starExamples){
       dot(c,x(v),y(l),3.6,col);text(c,n,x(v)+dx,y(l)+dy,col,dx<0?'right':'left');
     }
@@ -382,7 +380,7 @@ function starLab(root){
     const next=solarTrack.findIndex(([t])=>t>age), j=next===-1?solarTrack.length-2:next-1;
     const [start,,,stage]=solarTrack[j], end=solarTrack[j+1][0], f=(age-start)/(end-start);
     const point=track[j].map((v,k)=>v+(track[j+1][k]-v)*f);
-    shot(c,...point,5,true);
+    if(showTrack)shot(c,...point,5,true);
     $(root,'sun-stage').textContent=age.toFixed(2)+' billion years · '+(age===20?solarTrack.at(-1)[3]:stage);
   };
   const detach=attach(root,draw), input=$(root,'sun-age');
@@ -398,14 +396,18 @@ function starLab(root){
   });
   go.addEventListener('click',()=>{
     if(!playing){
-      if(+input.value>=20)input.value=0;
+      const trackSwitch=$(root,'hr-track');
+      if(!trackSwitch.checked||+input.value>=20)input.value=0;
+      trackSwitch.checked=true;
       age=+input.value;
       index=Math.max(0,solarTrack.findIndex(([t])=>t>age)-1);
       draw();
     }
     playing=!playing;
+    if(!playing)go.textContent='Play the Sun’s life';
   });
-  input.addEventListener('input',()=>{if(playing)go.click();});
+  input.addEventListener('input',()=>{if(playing)go.click();$(root,'hr-track').checked=true;draw();});
+  $(root,'hr-track').addEventListener('change',event=>{if(!event.target.checked&&playing)go.click();});
   return ()=>{detach();dispose();};
 }
 
@@ -660,33 +662,33 @@ function lightSpeedLab(root){
   });
 }
 
-function retrogradeLab(root){
+function retrogradeLab(root,api){
   root.innerHTML=card('Why does Jupiter seem to go backward?',
     '<p>Imagine passing a slower runner on the inside lane. Against the distant scenery, that runner seems to slide backward even as both of you run forward. Earth does something similar when it passes Jupiter.</p>'+
     '<div class="lab-actions"><button id="retro-play">Play</button><button id="retro-pass">Jump to the pass</button></div>'+
-    slider('retro-day','Days before or after Earth passes Jupiter',-190,190,-190)+out('retro-status')+
+    slider('retro-day','Observation night',0,169,0)+out('retro-status')+
     '<div class="lab-rows retro-views"><section><h3>From above the Solar System</h3>'+canvas('retro-orbits','Earth and Jupiter move in the same direction. A sightline connects Earth to Jupiter.')+
     '</section><section><h3>From Earth, against the stars</h3>'+canvas('retro-sky','Jupiter’s apparent direction on a fixed star background, with east to the right.')+'</section></div>'+
-    '<p>Follow the gold sightline in the first picture and Jupiter’s dot in the second. The <strong>purple stretch</strong> shows where Jupiter appears to move west. The two ends of that stretch are the <strong>stationary points</strong>, where it briefly appears to stop before changing direction.</p>'+
+    '<p>Follow the gold sightline in the first picture and Jupiter’s dot in the second. The <strong>purple stretch</strong> shows where Jupiter appears to move west. At the <strong>stationary points</strong> Jupiter stops moving east or west before reversing. It can still drift north or south.</p>'+
     '<details><summary>How did epicycles explain the reversal?</summary>'+
     '<div class="lab-rows"><svg class="kepler-mini" viewBox="0 0 220 128" role="img" aria-label="An Earth-centered model with a small movable circle carried along a larger circle."><circle cx="84" cy="64" r="49" fill="none" stroke="#7296bf"/><circle cx="125" cy="38" r="23" fill="none" stroke="#e8b979"/><circle cx="84" cy="64" r="5" fill="#84c6ff"/><circle cx="146" cy="47" r="5" fill="#e8b979"/><text x="84" y="84">Earth</text><text x="174" y="60">Planet</text><text x="172" y="23">Epicycle</text></svg>'+
     '<p>In the Earth-centered model associated with Ptolemy, a planet rode on a small circle called an <strong>epicycle</strong>. The center of that circle traveled along a larger circle called the <strong>deferent</strong>. Part of the small circle could make the planet seem to go backward. It was a useful way to calculate positions. Jupiter’s reversal comes from watching it from a moving Earth, as the animation shows. The same apparent reversal can be described in Earth-centered coordinates.</p></div></details>'+
-    '<p class="callout">This model uses circular orbits in one plane. The sky view shows east–west motion. Real planets can also drift north or south and trace a loop against the stars.</p>');
+    '<p class="callout">Each frame uses a real date at 22:00 UTC, with Jupiter above Milan’s horizon throughout this example. The view is aligned on the stars, like stacking photos and matching the stars in each one. Up is north on the star map. Jupiter’s height above the local horizon is listed separately. The north–south direction is stretched to make the narrow curve easier to see.</p>');
   const input=$(root,'retro-day'),play=$(root,'retro-play');
-  const omega=2*Math.PI/365.256, jupiterOmega=omega/11.86, orbitRadius=5.2;
+  const pass=$(root,'retro-pass');
+  play.disabled=pass.disabled=input.disabled=true;
+  let data,closed=false;
+  const orbitRadius=5.2, purple='#bc9cff';
   const position=(angle,r)=>[r*Math.cos(angle),r*Math.sin(angle)];
-  function geometry(day){
-    const earth=position(day*omega,1),jupiter=position(day*jupiterOmega,orbitRadius);
-    return {earth,jupiter,bearing:Math.atan2(jupiter[1]-earth[1],jupiter[0]-earth[0])};
-  }
-  const samples=Array.from({length:381},(_,i)=>geometry(i-190).bearing);
-  const retrograde=samples.map((bearing,i)=>i>0&&bearing<samples[i-1]);
-  const first=retrograde.indexOf(true),last=retrograde.lastIndexOf(true);
-  const low=Math.min(...samples),high=Math.max(...samples);
+  const dateFormat=new Intl.DateTimeFormat('en-US',{dateStyle:'medium',timeZone:'UTC'});
   const dispose=attach(root,()=>{
-    const day=Number(input.value),index=day+190,{earth,jupiter,bearing}=geometry(day);
-    const direction=index>=first&&index<=last?'Jupiter appears to move west · retrograde':'Jupiter appears to move east · direct';
-    $(root,'retro-status').textContent=(day===0?'Earth passes Jupiter':Math.abs(day)+' days '+(day<0?'before':'after')+' the pass')+' · '+direction;
+    if(!data)return;
+    const {samples,stars,first,last,oppositionIndex}=data;
+    const index=Number(input.value),[date,ra,dec,earth,jupiter,alt]=samples[index];
+    const station=index===first||index===last, retro=index>first&&index<last;
+    const direction=station?'Stationary point':retro?'Westward · retrograde':'Eastward · direct';
+    $(root,'retro-status').textContent=dateFormat.format(Date.parse(date))+' · 22:00 UTC · '+direction+
+      ' · '+Math.round(alt)+'° above Milan’s horizon'+(index===oppositionIndex?' · Opposition date':'');
     const orbit=canvasContext($(root,'retro-orbits'));
     if(orbit){
       const {ctx:c,w,h}=orbit,r=Math.min(w,h)*.38/orbitRadius,x=w/2,y=h/2;
@@ -702,39 +704,66 @@ function retrogradeLab(root){
         }
       }
       const e=map(earth),j=map(jupiter);
-      line(c,e,[e[0]+Math.cos(bearing)*w,e[1]-Math.sin(bearing)*w],gold,1.5);
+      line(c,e,[e[0]+(j[0]-e[0])*1.6,e[1]+(j[1]-e[1])*1.6],gold,1.5);
       shot(c,x,y,5);dot(c,...e,5,cyan);dot(c,...j,7,gold);
       text(c,'Earth',e[0],e[1]+(e[1]>y?20:-11),cyan);
       text(c,'Jupiter',j[0],j[1]-12,gold);
     }
     const sky=canvasContext($(root,'retro-sky'));
     if(sky){
-      const {ctx:c,w,h}=sky,y=h*.47,toX=a=>w*(.11+.78*(a-low)/(high-low));
+      const {ctx:c,w,h}=sky;
+      const px=value=>w*(.1+.8*(value-102)/19),py=value=>h*(.78-.56*(value-20)/4);
+      const point=([,a,d])=>[px(a),py(d)];
       background(c,w,h,'#111d36','#080c18');
-      for(let i=1;i<70;i++)dot(c,(i*137.3%100)*w/100,(i*63.7%100)*h/100,i%9===0?1.7:.8,'#dce9ff83');
-      text(c,'WEST',14,24,muted,'left');text(c,'EAST',w-14,24,muted,'right');
-      line(c,[w*.10,y],[w*.90,y],'#94a9c273',1.5);
-      const left=toX(samples[last]),right=toX(samples[first-1]);
-      line(c,[left,y],[right,y],'#bc9cff',4);
-      for(const x of [left,right])line(c,[x,y-8],[x,y+9],'#bc9cff',2);
-      text(c,'Stationary points',w/2,y+42,'#d9c5ff');
-      const bx=toX(bearing);
-      shot(c,bx,y,6);text(c,'Jupiter',bx,y-19,gold);
-      text(c,index>=first&&index<=last?'← Westward':'Eastward →',w/2,h*.78,ink);
+      for(const angle of [104,108,112,116,120]){
+        line(c,[px(angle),34],[px(angle),h-35],'#334966');
+        text(c,angle+'°',px(angle),h-17,muted);
+      }
+      for(const angle of [20,21,22,23,24]){
+        line(c,[34,py(angle)],[w-14,py(angle)],'#334966');
+        text(c,angle+'°',28,py(angle)+4,muted,'right');
+      }
+      text(c,'WEST',14,23,muted,'left');text(c,'NORTH ↑',w/2,23,muted);text(c,'EAST',w-14,23,muted,'right');
+      for(const [,group] of stars)for(const [a,d] of group){
+        if(a>=102&&a<=121&&d>=19&&d<=25)dot(c,px(a),py(d),2.4,'#dce9ff');
+      }
+      path(c,samples.map(point),'#7594b98a',2);
+      path(c,samples.slice(first,last+1).map(point),purple,2);
+      if(index>0)path(c,samples.slice(0,index+1).map(point),'#ffcb8c99',1);
+      for(let i=0;i<=index;i+=7)dot(c,...point(samples[i]),2,gold);
+      for(const i of [first,last]){
+        const label=new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',timeZone:'UTC'}).format(Date.parse(samples[i][0]));
+        const [x,y]=point(samples[i]);
+        dot(c,x,y,4,purple);text(c,label,x,y+(i===first?23:-14),purple);
+      }
+      const [x,y]=point([date,ra,dec]);
+      shot(c,x,y,5);
     }
   });
+  $(root,'retro-status').textContent='Calculating Jupiter’s nightly positions…';
+  api('jupiter_retrograde',[]).then(result=>{
+    if(closed)return;
+    const {samples,opposition}=result;
+    const first=samples.findIndex((s,i)=>i+1<samples.length&&samples[i+1][1]<s[1]);
+    const last=samples.findIndex((s,i)=>i>first&&i+1<samples.length&&samples[i+1][1]>s[1]);
+    const oppositionIndex=samples.findIndex(s=>s[0].slice(0,10)===opposition.slice(0,10));
+    data={...result,first,last,oppositionIndex};
+    input.max=samples.length-1;
+    play.disabled=pass.disabled=input.disabled=false;
+    setDay(0);
+  }).catch(()=>{if(!closed)$(root,'retro-status').textContent='Jupiter’s positions could not be loaded.';});
   let timer;
   function stop(){clearInterval(timer);timer=null;play.textContent='Play';}
   function setDay(day){input.value=day;input.dispatchEvent(new Event('input',{bubbles:true}));}
   play.onclick=()=>{
     if(timer){stop();return;}
-    if(+input.value===190)setDay(-190);
+    if(input.value===input.max)setDay(0);
     play.textContent='Pause';
-    timer=setInterval(()=>{setDay(+input.value+2);if(+input.value===190)stop();},55);
+    timer=setInterval(()=>{setDay(+input.value+1);if(input.value===input.max)stop();},85);
   };
   input.onpointerdown=stop;
-  $(root,'retro-pass').onclick=()=>{stop();setDay(0);};
-  return ()=>{stop();dispose();};
+  pass.onclick=()=>{if(data){stop();setDay(data.oppositionIndex);}};
+  return ()=>{closed=true;stop();dispose();};
 }
 
 function galileoLab(root){
