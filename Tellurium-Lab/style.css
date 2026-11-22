@@ -42,3 +42,29 @@ input[type=range]{width:100%;margin:11px 0 0;accent-color:var(--blue);cursor:poi
 #solstice-rays{grid-column:1/-1;height:140px;background:#101d30;border-radius:8px}
 #solstice-resume{grid-column:1/-1;justify-self:start}
 #orbit-progress{align-self:center;color:var(--faint);font:.8rem var(--mono)}
+#pause-slot{position:relative}
+#pause-slot[data-kind=phase]{height:135px}
+#pause-slot[data-kind=season]{height:245px}
+#pause-slot>section{position:absolute;inset:0 0 10px;margin:0;overflow:auto;align-content:center}
+@media(max-width:530px){#pause-slot[data-kind=phase]{height:174px}#pause-slot[data-kind=season]{height:270px}}
+nav{flex-wrap:wrap}
+@media(max-width:710px){nav{flex-wrap:nowrap}}
+.lab-stack{display:grid;gap:14px}
+.lab-card{padding:clamp(12px,2.8vw,24px);background:var(--panel);border:1px solid var(--line);border-radius:15px}
+.lab-card h2{font-size:clamp(1.22rem,3vw,1.7rem)}
+.lab-card h3{margin:0 0 .4em}.lab-card p{color:var(--faint);margin:.5em 0;max-width:75ch}
+.lab-card canvas{height:258px;background:#090f1b;border:1px solid #283952;border-radius:10px;margin-top:12px}
+.lab-card canvas.tall{height:clamp(325px,48vw,480px)}
+.lab-rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.lab-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0}
+.lab-actions label{display:flex;align-items:center;gap:6px}
+.lab-card input[type=range]{display:block;margin:10px 0}
+.lab-readout{color:var(--gold);font:.84rem var(--mono);display:block;margin:8px 0}
+.lab-card details{margin-top:10px;color:var(--faint)}.lab-card summary{cursor:pointer;color:var(--blue)}
+.spectrum-white{height:42px;display:flex;align-items:center;max-width:550px;margin:14px auto 2px;gap:10px}
+.spectrum-white span{flex:1;height:22px;border-radius:6px;background:linear-gradient(90deg,#7e4fe5,#528aff,#51ccfb,#65e478,#ffe578,#ff652f)}
+.spectrum-white b{display:grid;place-items:center;border-radius:50%;width:36px;height:36px;background:#fff;color:#172336;box-shadow:0 0 23px #eaf6ff88}
+@media(max-width:710px){.lab-rows{grid-template-columns:1fr}}
+#pause-slot[data-kind=season]{height:260px}
+@media(max-width:530px){#pause-slot[data-kind=season]{height:290px}}
+.lab-card input[type=number]{width:6.3em}

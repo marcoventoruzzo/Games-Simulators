@@ -1,3 +1,4 @@
+import {mountLab} from './labs.js';
 import {loadTextures,render,phaseDisc,skyChart,skyDome,dot,unit,solsticeDiagram} from './scene.js';
 
 const $=id=>document.getElementById(id);
@@ -14,6 +15,7 @@ const configs={
   orbit:['SUN-CENTERED','One year around the Sun','Circular orbit model · body markers enlarged'],
   seasons:['EARTH’S YEAR','One orbit. Two opposite seasons.','Orbit shape to scale · Sun, Earth, and axis enlarged']
 };
+let activeLab=null, disposeLab=null, ephemeris;
 let api, view='phases', selected=clamp(Date.now()), anchor=selected, dayStart=Math.floor(selected/DAY)*DAY;
 let camera={az:presets.tilt[0],el:presets.tilt[1],zoom:1},frame,sky;
 let latitude=45.4642,longitude=9.19,gain=20,playing=false,timer,busy=false,pending=false,revision=0;
@@ -178,7 +180,23 @@ function setCamera(name){
   draw();
 }
 
+function showLab(name){
+  stop();clearCheckpoint();revision++;
+  disposeLab?.();
+  activeLab=name;
+  $('orrery-layout').hidden=true;$('science-lab').hidden=false;$('sky').hidden=true;$('stamp').hidden=true;
+  for(const b of document.querySelectorAll('nav button')){
+    if(b.dataset.lab===name)b.setAttribute('aria-current','page');
+    else b.removeAttribute('aria-current');
+  }
+  disposeLab=mountLab($('science-lab'),name,async (op,args)=>(await ephemeris)(op,args),new Date(selected).getUTCFullYear());
+}
 function setView(name){
+  if(activeLab){
+    disposeLab?.();disposeLab=null;activeLab=null;
+    $('science-lab').hidden=true;$('science-lab').replaceChildren();$('orrery-layout').hidden=false;
+    for(const b of document.querySelectorAll('[data-lab]'))b.removeAttribute('aria-current');
+  }
   if(view!==name){stop();clearCheckpoint();}
   view=name;
   for(const button of document.querySelectorAll('[data-view]')){
@@ -186,6 +204,7 @@ function setView(name){
     else button.removeAttribute('aria-current');
   }
   if(name!=='phases')$('sky').hidden=true;
+  $('pause-slot').dataset.kind=name==='seasons'?'season':name==='phases'?'phase':'';
   const undated=name==='eclipse'||name==='orbit';
   for(const id of ['camera-controls','zoom-controls','calendar-controls','stamp'])$(id).hidden=undated;
   $('orbit-controls').hidden=name!=='orbit';
@@ -306,7 +325,7 @@ function showSky(){
 
 function request(){
   revision+=1;
-  if(!api||view==='eclipse'||view==='orbit')return;
+  if(activeLab||!api||view==='eclipse'||view==='orbit')return;
   pending=true;
   if(!busy)void refresh();
 }
@@ -428,6 +447,7 @@ function updateObserver(){
   request();
 }
 for(const button of document.querySelectorAll('[data-view]'))button.onclick=()=>setView(button.dataset.view);
+for(const button of document.querySelectorAll('[data-lab]'))button.onclick=()=>showLab(button.dataset.lab);
 for(const id of Object.keys(presets))$(id).onclick=()=>setCamera(id);
 $('guide').addEventListener('click',event=>{
   const b=event.target.closest('button');
@@ -496,7 +516,8 @@ observer.observe(space);observer.observe($('sky-canvas'));observer.observe($('sk
 setView('phases');updateClock();
 void loadTextures().then(()=>{draw();updateGuide();});
 try{
-  api=await connect();
+  ephemeris=connect();
+  api=await ephemeris;
   request();
 }catch(error){
   console.error(error);

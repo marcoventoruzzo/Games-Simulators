@@ -22,8 +22,15 @@
   <button data-view="eclipse">Eclipses</button>
   <button data-view="orbit">Around the Sun</button>
   <button data-view="seasons">Seasons</button>
+  <button data-lab="analemma">Analemma</button>
+  <button data-lab="sky">Sky &amp; sunlight</button>
+  <button data-lab="stars">Star lives</button>
+  <button data-lab="doppler">Doppler shift</button>
+  <button data-lab="dark">Dark night sky</button>
+  <button data-lab="measure">Distance &amp; spectra</button>
 </nav>
-<div class="layout">
+<section id="science-lab" hidden aria-label="Astronomy laboratory"></section>
+<div id="orrery-layout" class="layout">
   <section class="instrument" aria-label="Orbital model">
     <div class="scene-head">
       <div><span class="eyebrow" id="frame-label">EARTH-CENTERED</span><h2 id="scene-title">The lunar cycle</h2></div>
@@ -43,6 +50,7 @@
       <div class="tick-labels"><span>Start of orbit</span><span>Halfway</span><span>One year</span></div>
     </div>
     <div class="timeline" id="calendar-controls">
+      <div id="pause-slot">
       <section id="solstice-panel" class="phase-checkpoint solstice-checkpoint" hidden aria-labelledby="solstice-title">
         <div class="checkpoint-copy" aria-live="polite"><h3 id="solstice-title"></h3><p id="solstice-note"></p></div>
         <canvas id="solstice-rays" aria-label="Parallel sunlight spreads over different surface lengths at 45 degrees north and south."></canvas>
@@ -60,6 +68,7 @@
         </div>
         <button id="resume">Resume playback</button>
       </section>
+      </div>
       <div class="transport">
         <button id="play" aria-label="Play">▶</button>
         <button id="forward" aria-label="Step forward">Step</button>

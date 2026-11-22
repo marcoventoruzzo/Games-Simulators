@@ -226,8 +226,23 @@ def sestri_sky(date):
                 ratio=moon_radius/sun_radius, altitude=horizontal(SUN,t,observer)[1])
 
 
+@lru_cache(maxsize=12)
+def analemma(year, latitude, longitude):
+    """Sun at fixed local mean solar noon, on every calendar day."""
+    t = ae.Time(f'{year}-01-01T00:00:00Z')
+    end = ae.Time(f'{year+1}-01-01T00:00:00Z')
+    observer = ae.Observer(latitude, longitude, 0)
+    result = []
+    for day in range(round(end.ut-t.ut)):
+        sample = t.AddDays(day+(12-longitude/15)/24)
+        eq = ae.Equator(SUN, sample, observer, True, True)
+        h = ae.Horizon(sample, observer, eq.ra, eq.dec, ae.Refraction.Airless)
+        result.append([iso(sample)[:10], h.azimuth, h.altitude])
+    return result
+
+
 OPERATIONS = dict(frame=frame, sky=sky_day, trajectory=trajectory, event=event, quarter=next_quarter, season=season_year,
-                  sestri_event=sestri_event, sestri_sky=sestri_sky)
+                  sestri_event=sestri_event, sestri_sky=sestri_sky, analemma=analemma)
 
 
 def request_json(payload):
