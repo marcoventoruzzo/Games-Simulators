@@ -107,3 +107,23 @@ nav{flex-wrap:wrap}
 .astro-table{width:100%;font-size:.82rem;border-collapse:collapse}
 .astro-table th,.astro-table td{text-align:left;padding:5px 4px;border-bottom:1px solid var(--line)}
 @media(prefers-reduced-motion:reduce){.slate-inner{transition:none}}
+.planet-orbit .orbit-sun{width:43px;height:43px}
+.planet-orbit .orbit-sun:after{display:none}
+.planet-table-title{text-align:center;text-transform:uppercase;letter-spacing:.06em}
+.planet-table-scroll{overflow-x:auto}
+.planet-table{width:100%;min-width:810px;border-collapse:collapse;font-size:.81rem}
+.planet-table th,.planet-table td{border:1px solid #50617c;padding:7px;text-align:center}
+.planet-table th[scope=row]{text-align:left;background:#101d30}
+.planet-table th[scope=col],.planet-table td{background:color-mix(in srgb,var(--planet,#314172) 21%,#111625)}
+.planet-swatch{display:block;width:27px;height:27px;margin:2px auto 7px;border-radius:50%;background:radial-gradient(circle at 30% 24%,#ffffffc0,var(--planet) 41%,#182137)}
+.planet-laws h3{margin-top:16px;color:var(--gold)}
+.astro-views{align-items:start;grid-template-columns:1fr 1fr}
+.astro-views canvas[data-ground]{touch-action:none;cursor:grab}
+.astro-views canvas[data-ground]:active{cursor:grabbing}
+.astro-meanings summary{font-size:1.15rem;font-weight:700}
+.astro-meanings dl{display:grid;grid-template-columns:minmax(8em,auto) 1fr;gap:8px 15px}
+.astro-meanings dd{margin:0;color:var(--faint)}
+.astro-meanings dt{font-weight:650}
+@media(max-width:710px){.astro-views{grid-template-columns:1fr}}
+
+.kepler-graph{display:block;max-width:730px;width:100%;margin:10px auto;background:#090f1b;border-radius:8px}.kepler-graph text{fill:var(--ink);font:11px system-ui}

@@ -1,8 +1,9 @@
+import {mountZodiacSky} from './zodiac-sky.js';
 import {canvasContext} from './scene.js';
 
 const signs=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
 const glyphs=['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
-const symbols={'Sun':'☉','Moon':'☽','Mercury':'☿','Venus':'♀','Mars':'♂','Jupiter':'♃','Saturn':'♄','Uranus':'♅','Neptune':'♆'};
+const symbols={'Sun':'☉','Moon':'☽','Mercury':'☿','Venus':'♀','Mars':'♂','Jupiter':'♃','Saturn':'♄','Uranus':'♅','Neptune':'♆','Lilith':'⚸'};
 const wrap=n=>(n%360+360)%360;
 const position=lon=>signs[Math.floor(wrap(lon)/30)]+' '+(wrap(lon)%30).toFixed(1)+'°';
 const signed=n=>wrap(n+180)-180;
@@ -12,6 +13,31 @@ const examples={
   jagger:['Mick Jagger','1943-07-26T12:00','51.4462,0.2169']
 };
 const locations='<option value="45.4642,9.19">Milan</option><option value="51.5074,-0.1278">London</option><option value="40.7128,-74.006">New York</option><option value="-33.8688,151.2093">Sydney</option><option value="42.3318,-71.1212">Brookline, Massachusetts</option><option value="51.4462,0.2169">Dartford, England</option>';
+const timeZones=['Europe/Rome','Europe/London','America/New_York','Australia/Sydney','America/New_York','Europe/London'];
+const siteNames=['Milan','London','New York','Sydney','Brookline','Dartford'];
+function localStamp(date,zone){
+  const parts=new Intl.DateTimeFormat('en-GB',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date);
+  const v=Object.fromEntries(parts.map(({type,value})=>[type,value]));
+  return v.year+'-'+v.month+'-'+v.day+'T'+v.hour+':'+v.minute;
+}
+function localToUTC(stamp,zone){
+  const target=Date.parse(stamp+'Z');
+  let guess=target;
+  for(let i=0;i<4;i++){
+    const diff=target-Date.parse(localStamp(new Date(guess),zone)+'Z');
+    if(!diff)return new Date(guess).toISOString();
+    guess+=diff;
+  }
+  throw Error('This local time may fall in a daylight-saving gap.');
+}
+const meanings=[
+ ['Sun','Identity, vitality and what you try to express.'],['Moon','Feelings, routines and what helps you feel secure.'],
+ ['Mercury','Learning, thinking and communicating.'],['Venus','Affection, taste and what you value.'],
+ ['Mars','Action, drive and how you confront obstacles.'],['Jupiter','Growth, opportunity and beliefs.'],
+ ['Saturn','Limits, responsibilities and patience.'],['Uranus','In modern astrology, disruption and independence.'],
+ ['Neptune','In modern astrology, imagination and ideals.'],['Ascendant','The rising sign, traditionally linked to how you meet the world.'],
+ ['Black Moon Lilith','In some modern astrology, a symbol for autonomy, taboos or rejected parts of oneself.']
+];
 const dateField=(id,value)=>`<input id="${id}" type="datetime-local" min="1900-01-01T00:00" max="2100-12-31T23:59" value="${value}" required>`;
 const blue='#99ceff', gold='#ffce92', faint='#b6c9e4';
 
@@ -37,7 +63,7 @@ function wheel(canvas,birth,transit){
   }
   drawLine(point(0,.57),point(0,1.035),gold);
   label('ASC',point(0,1.12),gold,11);
-  for(const [points,color,rad] of [[birth.points,blue,.63],[transit?.points??[],gold,.75]]){
+  for(const [points,color,rad] of [[[...birth.points,['Lilith',birth.lilith]],blue,.63],[transit?.points??[],gold,.75]]){
     // Keep close labels readable by alternating bands while retaining true longitude ticks.
     const sorted=[...points].sort((a,b)=>a[1]-b[1]);
     sorted.forEach(([name,lon],i)=>{
@@ -56,14 +82,23 @@ export function mountAstrology(root,api){
     <article class="lab-card"><h2>Astrology &amp; Astronomy</h2>
     <p>Astrology interprets the positions of celestial bodies as signs about human affairs. Its predictive claims lack reliable scientific evidence. Historically, divination and calendar making helped motivate sustained observations of the sky. Astronomy grew partly out of that shared tradition, in a loose parallel with alchemy and chemistry.</p>
     <p>This is a guide to reading the symbols and the sky geometry behind them. The calculations use the Western tropical zodiac and equal houses.</p></article>
+    <article class="lab-card"><details class="astro-meanings"><summary>What do the symbols mean?</summary>
+    <p>Think of this as the grammar astrologers use. The body suggests <strong>what</strong> the symbol is about, the sign describes <strong>how</strong> it is expressed, and the house suggests <strong>where</strong> in life it appears. For instance, a traditional reading might combine Saturn (discipline), Gemini (communication), and the fourth house (home). These are symbolic associations.</p>
+    <dl>${meanings.map(([name,note])=>`<dt>${name}</dt><dd>${note}</dd>`).join('')}</dl>
+    <p><strong>Where is Lilith?</strong> Black Moon Lilith is a calculated direction. This chart uses the Moon’s <em>mean apogee</em>, the direction of the farthest point of its mean orbit. In a simple ellipse, Earth sits at one focus and the empty focus lies along the same direction as apogee, but at a different distance. Neither point is a moon or a visible body. Some astrologers use a varying, rather than mean, apogee.</p></details></article>
     <article class="lab-card"><h2>Make a birth chart</h2>
-    <form class="lab-actions"><label>Birth time (UTC) ${dateField('astro-birth','2000-09-01T12:00')}</label><label>Birthplace <select>${locations}</select></label><button type="submit">Draw charts</button></form>
+    <form class="lab-actions"><label>Birth time (local) ${dateField('astro-birth','1973-10-04T10:30')}</label><label>Birthplace <select>${locations}</select></label><button type="submit">Draw charts</button></form>
     <div class="lab-actions"><label>Famous example <select data-example><option value="">Choose a person</option>${Object.entries(examples).map(([key,[name]])=>`<option value="${key}">${name}</option>`).join('')}</select></label></div>
     <p data-example-note></p><p data-status role="status"></p>
-    <div class="lab-rows"><canvas aria-label="Natal chart with twelve tropical signs, twelve equal houses, and the eastern ascendant"></canvas><div>
-    <p><strong>Sun sign:</strong> the 30° sector of the ecliptic containing the Sun’s longitude. <strong>Ascendant:</strong> where the ecliptic intersects the eastern horizon at birth. The place and time set that point.</p>
-    <p><strong>Houses:</strong> in this system, twelve 30° sectors starting at the ascendant. Astrology traditionally associates them with areas of life, such as self (1), home (4), and partnerships (7). Other systems draw different boundaries.</p>
-    <div data-natal></div></div></div></article>
+    <div class="lab-rows astro-views">
+    <div><h3>The sky from the ground</h3><p data-sky-time></p>
+    <canvas data-ground tabindex="0" aria-label="Birth sky. Drag or use the arrow keys to look around."></canvas>
+    <div class="lab-actions" data-sky-controls><button data-look="Sun">Look toward the Sun</button><button data-look="ASC">Look at the ascendant</button><button data-look="Taurus">Taurus</button><button data-look="Gemini">Gemini</button><label><input type="checkbox" checked> Show hidden sky</label><output></output></div>
+    <p>The horizon separates sky from ground. The overlay reveals stars washed out by sunlight and positions below the horizon. The constellation figures connect a few bright stars. They illustrate the constellations without tracing official boundaries.</p></div>
+    <div><h3>The same sky as a birth chart</h3><canvas data-natal-wheel aria-label="Natal chart with twelve tropical signs, twelve equal houses, and the eastern ascendant"></canvas>
+    <p><strong>Sun sign:</strong> the 30° sector of the ecliptic containing the Sun. Think of the ecliptic as the Sun’s yearly route against the stars. <strong>Ascendant:</strong> the point on that route rising on the eastern horizon. Earth’s rotation changes which part of the sky is rising throughout the day.</p>
+    <p><strong>Houses:</strong> twelve 30° sectors in this example, starting at the ascendant. Astrology traditionally associates them with areas of life, such as self (1), home (4), and partnerships (7). Other systems draw different boundaries.</p>
+    <div data-natal></div><p data-lilith></p></div></div></article>
     <article class="lab-card"><h2>Read the sky for a chosen day</h2>
     <label>Transit time (UTC) ${dateField('astro-day',now)}</label>
     <p>The blue marks are the birth positions. Gold shows <strong>transits</strong>, the positions at the selected time, laid over the same birth houses. For example, “Saturn in Gemini” means Saturn’s ecliptic longitude is in the 60°–90° tropical sector.</p>
@@ -75,9 +110,10 @@ export function mountAstrology(root,api){
     <p data-sun></p>
     <label>Years of precession <input type="range" min="0" max="2600" step="50" value="2000"></label>
     <p data-drift></p><canvas aria-label="Conceptual precession scale comparing the earlier and later direction of the March equinox against a fixed star background"></canvas>
-    <p>The drawing fixes the star background and exaggerates the layout for readability. Between ancient times and today the offset is substantial, but a tropical Virgo’s astronomical constellation depends on the exact date.</p></article>
+    <p>The drawing fixes the star background and exaggerates the layout for readability. Between ancient times and today the offset is substantial, but a tropical Virgo’s astronomical constellation depends on the exact date. For example, on September 1, 2000 the Sun was in tropical Virgo and astronomically in Leo.</p></article>
     </div>`;
-  const q=s=>root.querySelector(s), [natalCanvas,transitCanvas,precession]=root.querySelectorAll('canvas');
+  const q=s=>root.querySelector(s), [,natalCanvas,transitCanvas,precession]=root.querySelectorAll('canvas');
+  const ground=mountZodiacSky(q('[data-ground]'),q('[data-sky-controls]'));
   const form=q('form'), birth=q('#astro-birth'), day=q('#astro-day'), site=form.querySelector('select'), slider=q('[type=range]');
   let current, sky, revision=0, closed=false;
   function drawPrecession(){
@@ -113,9 +149,13 @@ export function mountAstrology(root,api){
     const rev=++revision,[lat,lon]=site.value.split(',').map(Number);
     q('[data-status]').textContent='Computing sky positions…';
     try{
-      const [a,b]=await Promise.all([api('zodiac',[birth.value+':00Z',lat,lon]),api('zodiac',[day.value+':00Z',lat,lon])]);
+      const instant=localToUTC(birth.value,timeZones[site.selectedIndex]);
+      const [a,b]=await Promise.all([api('zodiac',[instant,lat,lon]),api('zodiac',[day.value+':00Z',lat,lon])]);
       if(closed||rev!==revision)return;
-      current=a;sky=b;
+      current=a;sky=b;ground.set(a);
+      const local=new Intl.DateTimeFormat('en-US',{dateStyle:'long',timeStyle:'short',timeZone:timeZones[site.selectedIndex]}).format(new Date(instant));
+      q('[data-sky-time]').textContent=siteNames[site.selectedIndex]+' · '+local+' local · '+instant.slice(11,16)+' UTC';
+      q('[data-lilith]').textContent='Black Moon Lilith (mean apogee) · '+position(a.lilith)+' · house '+house(a.lilith);
       q('[data-status]').textContent='Ascendant · '+position(a.ascendant);
       q('[data-natal]').innerHTML=table(a.points,true);
       q('[data-transits]').innerHTML=table(b.points,false);
@@ -138,7 +178,7 @@ export function mountAstrology(root,api){
     const sample=examples[example.value];
     if(!sample){resetExample();return;}
     const [name,time,place]=sample;
-    birth.value=time;site.value=place;
+    site.value=place;birth.value=localStamp(new Date(time+'Z'),timeZones[site.selectedIndex]);
     exampleNote.textContent=example.value==='elizabeth'?'Elizabeth II · 2:40 a.m. London time, recorded by the Royal Family (01:40 UTC).':name+' · birth date and birthplace, with 12:00 UTC used as a teaching assumption. The ascendant and houses are hypothetical.';
     void refresh();
   };
@@ -150,5 +190,5 @@ export function mountAstrology(root,api){
   const resize=new ResizeObserver(render);
   [natalCanvas,transitCanvas,precession].forEach(c=>resize.observe(c));
   drawPrecession();void refresh();
-  return ()=>{closed=true;resize.disconnect();};
+  return ()=>{closed=true;resize.disconnect();ground.dispose();};
 }

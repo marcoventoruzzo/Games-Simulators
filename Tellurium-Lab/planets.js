@@ -1,6 +1,6 @@
 import {canvasContext} from './scene.js';
 
-const picture=name=>new URL('./assets/'+name+'.webp',import.meta.url).href;
+
 const labels=['Orbital period','Rotation period','Mean orbital speed','Mean distance from the Sun','Axial tilt','Mean temperature','Day–night temperature range','Seasons?','Seasonal temperature range','Surface pressure','Gravity','Atmosphere','Magnetic field','Three constituents shown'];
 const planets=[
  ['Mercury','#a9a6a3',.24,['88 days','58.6 days','172,000 km/h','0.39 AU · 57.9 million km','0.03°','167 °C','−180 to +430 °C','No','—','≈ 0 atm','0.38 g','Thin exosphere','Weak','Oxygen, sodium, hydrogen']],
@@ -13,23 +13,58 @@ const planets=[
  ['Neptune','#728eff',164.79,['164.8 years','16 h 6 min','19,500 km/h','30.1 AU · 4.50 billion km','28.3°','−200 °C','Very small','Extreme','≈ 40 °C','No solid surface','1.14 g','Present','Strong and tilted','H₂, He, CH₄']]
 ];
 
+const sunRows=[
+ ['Type','G2 V main-sequence star, often called a yellow dwarf'],
+ ['Age','About 4.6 billion years'],
+ ['Diameter','About 1.39 million km, or 109 Earth diameters'],
+ ['Mass','About 333,000 Earth masses'],
+ ['Visible surface temperature','About 5,500 °C'],
+ ['Main ingredients','Hydrogen and helium'],
+ ['Power source','Hydrogen fusion in its core'],
+ ['Future','In roughly 5 billion years the Sun will begin evolving into a red giant. It will shed its outer layers and leave a white dwarf that slowly cools.']
+];
+const tableLabels=['Revolution around the Sun<br>Time to complete one orbit','Rotation on its axis<br>Sidereal rotation period','Average orbital speed<br>Around the Sun','Average distance from the Sun<br>1 AU ≈ 149.6 million km','Axial tilt<br>Relative to the orbital normal','Average temperature<br>Surface or upper atmosphere','Day–night temperature range<br>Typical difference','Does it have seasons?<br>Seasonal changes','Seasonal temperature range<br>Average difference','Surface pressure<br>Relative to Earth','Surface gravity<br>Relative to Earth','Atmosphere<br>Is it present?','Magnetic field<br>Is it present?','Three main atmospheric constituents shown'];
+function keplerGraph(){
+  const distances=[.39,.72,1,1.52,5.20,9.58,19.22,30.07];
+  const x=d=>67+Math.log10(d/.1)*166;
+  const y=t=>284-Math.log10(t/.01)*50;
+  return `<details><summary>Distance and orbital period · Kepler’s third law</summary>
+    <svg class="kepler-graph" viewBox="0 0 610 330" role="img" aria-label="Logarithmic graph of distance and orbital period for all eight planets">
+    ${[.1,1,10,100].map(v=>`<path d="M${x(v)} 30V284" stroke="#465673"/><text x="${x(v)}" y="303" text-anchor="middle">${v}</text>`).join('')}
+    ${[.01,.1,1,10,100,1000].map(v=>`<path d="M67 ${y(v)}H565" stroke="#465673"/><text x="60" y="${y(v)+4}" text-anchor="end">${v}</text>`).join('')}
+    <path d="M${x(.1)} ${y(.1**1.5)}L${x(100)} ${y(100**1.5)}" stroke="#ddd9a8" stroke-dasharray="4 4"/>
+    ${planets.map(([name,color,period],i)=>`<circle cx="${x(distances[i])}" cy="${y(period)}" r="5" fill="${color}"/><text x="${x(distances[i])+8}" y="${y(period)+4}">${name}</text>`).join('')}
+    <text x="316" y="324" text-anchor="middle">Average distance from the Sun (AU)</text>
+    <text transform="translate(17 155) rotate(-90)" text-anchor="middle">Orbital period (Earth years)</text></svg>
+    <p>Both axes are logarithmic. The dashed line shows the approximate T² ∝ a³ relationship for orbits around the Sun.</p></details>`;
+}
+function comparisonTable(){
+  return `<h3 class="planet-table-title">The Planets of the Solar System</h3>
+  <div class="planet-table-scroll"><table class="planet-table"><thead><tr><th scope="col">Property</th>${planets.map(([name,color])=>`<th scope="col" style="--planet:${color}"><span class="planet-swatch"></span>${name}</th>`).join('')}</tr></thead>
+  <tbody>${tableLabels.map((label,i)=>`<tr><th scope="row">${label}</th>${planets.map(([,color,,values])=>`<td style="--planet:${color}">${values[i]}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+  <section class="planet-laws"><h3>Kepler’s Laws · How Planets Move</h3><div class="lab-rows">
+  <p><strong>1 · Orbits</strong><br>Each planet moves in an ellipse with the Sun at one focus.</p>
+  <p><strong>2 · Areas</strong><br>The line from the Sun to the planet sweeps out equal areas in equal times.</p>
+  <p><strong>3 · Periods</strong><br>The square of the orbital period is proportional to the cube of the orbit’s semimajor axis. <strong>T² ∝ a³</strong>.</p></div></section>${keplerGraph()}`;
+}
+
 export function mountPlanets(root){
   root.innerHTML=`<article class="lab-card planet-lab"><h2>Planets in our Solar system</h2>
-    <p>Pick a planet to open its data card. Orbital sizes and planet sizes are illustrative. The faster motions of the inner planets are based on the orbital periods.</p>
+    <p>Pick the Sun or a planet to open its data card. Orbital sizes and planet sizes are illustrative. The faster motions of the inner planets are based on the orbital periods.</p>
     <div class="lab-actions"><button data-flip>Flip to the planet table</button><button data-pause>Pause orbits</button></div>
     <div class="slate"><div class="slate-inner">
       <div class="slate-face slate-front"><div class="planet-orbit"><canvas aria-label="Animated diagram of the eight planets orbiting the Sun"></canvas>
+      <button data-planet="sun" title="Sun" aria-label="Sun" class="orbit-sun"></button>
       ${planets.map(([name,color],i)=>`<button data-planet="${i}" title="${name}" aria-label="${name}" style="--planet:${color}"></button>`).join('')}</div>
-      <div class="lab-actions planet-key">${planets.map(([name],i)=>`<button data-planet="${i}">${name}</button>`).join('')}</div>
+      <div class="lab-actions planet-key"><button data-planet="sun">Sun</button>${planets.map(([name],i)=>`<button data-planet="${i}">${name}</button>`).join('')}</div>
       <section class="planet-info" hidden aria-labelledby="planet-name"><div class="planet-info-head"><h3 id="planet-name"></h3><button data-close aria-label="Close planet information">×</button></div><dl></dl></section>
       </div>
-      <div class="slate-face slate-back" inert><img src="${picture('planet-table')}" alt="Original Italian infographic with a side-by-side comparison of all eight planets and Kepler’s laws">
-      <details><summary>Distance and orbital period · Kepler’s third law</summary><img src="${picture('planet-kepler')}" alt="Original Italian infographic plotting orbital period against distance on logarithmic axes"></details></div>
+      <div class="slate-face slate-back" inert>${comparisonTable()}</div>
     </div></div>
-    <p>The reverse shows your original table. The cards translate its values. Seasonal and day–night ranges are illustrative and depend on location, altitude and measurement method. Giant-planet temperatures and gravity refer to atmospheric reference levels.</p>
+    <p>The reverse reproduces the comparison in English, with the same planet order and measurements. Seasonal and day–night ranges are illustrative and depend on location, altitude and measurement method. Giant-planet temperatures and gravity refer to atmospheric reference levels.</p>
   </article>`;
   const canvas=root.querySelector('canvas'), panel=root.querySelector('.planet-info');
-  const dots=[...root.querySelectorAll('.planet-orbit button')];
+  const dots=[...root.querySelectorAll('.planet-orbit button:not(.orbit-sun)')];
   const slate=root.querySelector('.slate'), front=root.querySelector('.slate-front'), back=root.querySelector('.slate-back');
   const pause=root.querySelector('[data-pause]');
   let flipped=false,running=!matchMedia('(prefers-reduced-motion: reduce)').matches, frame=0,last=0,years=0;
@@ -69,9 +104,12 @@ export function mountPlanets(root){
   };
   let trigger;
   root.querySelectorAll('[data-planet]').forEach(button=>button.onclick=()=>{
-    trigger=button;const [name,,,values]=planets[Number(button.dataset.planet)];
+    trigger=button;
+    const isSun=button.dataset.planet==='sun';
+    const [name,,,values]=isSun?['Sun',null,null,null]:planets[Number(button.dataset.planet)];
+    const rows=isSun?sunRows:labels.map((label,i)=>[label,values[i]]);
     panel.querySelector('h3').textContent=name;
-    panel.querySelector('dl').innerHTML=labels.map((label,i)=>`<dt>${label}</dt><dd>${values[i]}</dd>`).join('');
+    panel.querySelector('dl').innerHTML=rows.map(([label,value])=>`<dt>${label}</dt><dd>${value}</dd>`).join('');
     panel.hidden=false;panel.querySelector('[data-close]').focus({preventScroll:true});
   });
   panel.querySelector('[data-close]').onclick=()=>{panel.hidden=true;trigger?.focus({preventScroll:true});};
