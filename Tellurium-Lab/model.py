@@ -385,11 +385,12 @@ def jupiter_retrograde():
     observer = ae.Observer(45.4642, 9.19, 0)
     jupiter = ae.Body.Jupiter
     samples = []
-    for day in range(170):
+    for day in range(372):
         t = start.AddDays(day)
         eq = ae.EquatorFromVector(ae.GeoVector(jupiter, t, True))
         samples.append([iso(t), eq.ra*15, eq.dec, earth_at(t),
-                        ecliptic(ae.HelioVector(jupiter, t)), horizontal(jupiter, t, observer)[1]])
+                        ecliptic(ae.HelioVector(jupiter, t)), horizontal(jupiter, t, observer)[1],
+                        ae.AngleFromSun(jupiter, t)])
     opposition = ae.SearchRelativeLongitude(jupiter, 0, start)
     stars = [[name, [[ra*15, dec] for ra, dec in ZODIAC_STARS[name]]]
              for name in ('Taurus', 'Gemini', 'Cancer', 'Leo')]

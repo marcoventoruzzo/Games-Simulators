@@ -695,18 +695,18 @@ function lightSpeedLab(root){
 function retrogradeLab(root,api){
   root.innerHTML=card('Why does Jupiter seem to go backward?',
     '<p>Imagine passing a slower runner on the inside lane. Against the distant scenery, that runner seems to slide backward even as both of you run forward. Earth does something similar when it passes Jupiter.</p>'+
-    '<div class="lab-actions"><button id="retro-play">Play</button><button id="retro-pass">Jump to the pass</button></div>'+
-    slider('retro-day','Observation night',0,169,0)+out('retro-status')+
+    '<div class="lab-actions"><button id="retro-play">Play</button><button id="retro-pass">Jump to the pass</button><label><input type="checkbox" id="retro-close"> Magnify the reversal</label></div>'+
+    slider('retro-day','Observation night',0,371,0)+out('retro-status')+
     '<div class="lab-rows retro-views"><section><h3>From above the Solar System</h3>'+canvas('retro-orbits','Earth and Jupiter move in the same direction. A sightline connects Earth to Jupiter.')+
     '</section><section><h3>From Earth, against the stars</h3>'+canvas('retro-sky','Jupiter’s apparent direction on a fixed star background, with east to the right.')+'</section></div>'+
     '<p>Follow the gold sightline in the first picture and Jupiter’s dot in the second. The <strong>purple stretch</strong> shows where Jupiter appears to move west. At the <strong>stationary points</strong> Jupiter stops moving east or west before reversing. It can still drift north or south.</p>'+
     '<details><summary>How did epicycles explain the reversal?</summary>'+
     '<div class="lab-rows"><svg class="kepler-mini" viewBox="0 0 220 128" role="img" aria-label="An Earth-centered model with a small movable circle carried along a larger circle."><circle cx="84" cy="64" r="49" fill="none" stroke="#7296bf"/><circle cx="125" cy="38" r="23" fill="none" stroke="#e8b979"/><circle cx="84" cy="64" r="5" fill="#84c6ff"/><circle cx="146" cy="47" r="5" fill="#e8b979"/><text x="84" y="84">Earth</text><text x="174" y="60">Planet</text><text x="172" y="23">Epicycle</text></svg>'+
     '<p>In the Earth-centered model associated with Ptolemy, a planet rode on a small circle called an <strong>epicycle</strong>. The center of that circle traveled along a larger circle called the <strong>deferent</strong>. Part of the small circle could make the planet seem to go backward. It was a useful way to calculate positions. Jupiter’s reversal comes from watching it from a moving Earth, as the animation shows. The same apparent reversal can be described in Earth-centered coordinates.</p></div></details>'+
-    '<p class="callout">Each frame uses a real date at 22:00 UTC, with Jupiter above Milan’s horizon throughout this example. The view is aligned on the stars, like stacking photos and matching the stars in each one. Up is north on the star map. Jupiter’s height above the local horizon is listed separately. The north–south direction is stretched to make the narrow curve easier to see.</p>');
+    '<p class="callout">Follow Earth through a complete orbit, from October 2025 to October 2026. Each frame is one night at 22:00 UTC. An open circle marks Jupiter’s calculated position when it is below Milan’s horizon or close to the Sun. The view is aligned on the stars, like stacking photos and matching the stars in each one. Up is north on the star map. Jupiter’s height above the local horizon is listed separately. The north–south direction is stretched to make the narrow curve easier to see.</p>');
   const input=$(root,'retro-day'),play=$(root,'retro-play');
-  const pass=$(root,'retro-pass');
-  play.disabled=pass.disabled=input.disabled=true;
+  const pass=$(root,'retro-pass'),close=$(root,'retro-close');
+  play.disabled=pass.disabled=input.disabled=close.disabled=true;
   let data,closed=false;
   const orbitRadius=5.2, purple='#bc9cff';
   const position=(angle,r)=>[r*Math.cos(angle),r*Math.sin(angle)];
@@ -714,11 +714,12 @@ function retrogradeLab(root,api){
   const dispose=attach(root,()=>{
     if(!data)return;
     const {samples,stars,first,last,oppositionIndex}=data;
-    const index=Number(input.value),[date,ra,dec,earth,jupiter,alt]=samples[index];
+    const index=Number(input.value),[date,ra,dec,earth,jupiter,alt,elongation]=samples[index];
     const station=index===first||index===last, retro=index>first&&index<last;
     const direction=station?'Stationary point':retro?'Westward · retrograde':'Eastward · direct';
     $(root,'retro-status').textContent=dateFormat.format(Date.parse(date))+' · 22:00 UTC · '+direction+
-      ' · '+Math.round(alt)+'° above Milan’s horizon'+(index===oppositionIndex?' · Opposition date':'');
+      ' · '+Math.round(Math.abs(alt))+'° '+(alt<0?'below':'above')+' Milan’s horizon'+
+      (elongation<15?' · Close to the Sun':'')+(index===oppositionIndex?' · Opposition date':'');
     const orbit=canvasContext($(root,'retro-orbits'));
     if(orbit){
       const {ctx:c,w,h}=orbit,r=Math.min(w,h)*.38/orbitRadius,x=w/2,y=h/2;
@@ -742,20 +743,24 @@ function retrogradeLab(root,api){
     const sky=canvasContext($(root,'retro-sky'));
     if(sky){
       const {ctx:c,w,h}=sky;
-      const px=value=>w*(.1+.8*(value-102)/19),py=value=>h*(.78-.56*(value-20)/4);
+      const [minRA,maxRA,minDec,maxDec]=close.checked?data.detail:data.bounds;
+      const px=value=>39+(w-62)*(value-minRA)/(maxRA-minRA);
+      const py=value=>h-43-(h-83)*(value-minDec)/(maxDec-minDec);
       const point=([,a,d])=>[px(a),py(d)];
       background(c,w,h,'#111d36','#080c18');
-      for(const angle of [104,108,112,116,120]){
+      const raStep=close.checked?4:10,decStep=close.checked?1:2;
+      for(let angle=Math.ceil(minRA/raStep)*raStep;angle<=maxRA;angle+=raStep){
         line(c,[px(angle),34],[px(angle),h-35],'#334966');
         text(c,angle+'°',px(angle),h-17,muted);
       }
-      for(const angle of [20,21,22,23,24]){
+      for(let angle=Math.ceil(minDec/decStep)*decStep;angle<=maxDec;angle+=decStep){
         line(c,[34,py(angle)],[w-14,py(angle)],'#334966');
         text(c,angle+'°',28,py(angle)+4,muted,'right');
       }
       text(c,'WEST',14,23,muted,'left');text(c,'NORTH ↑',w/2,23,muted);text(c,'EAST',w-14,23,muted,'right');
+      c.save();c.beginPath();c.rect(34,34,w-48,h-69);c.clip();
       for(const [,group] of stars)for(const [a,d] of group){
-        if(a>=102&&a<=121&&d>=19&&d<=25)dot(c,px(a),py(d),2.4,'#dce9ff');
+        if(a>=minRA&&a<=maxRA&&d>=minDec&&d<=maxDec)dot(c,px(a),py(d),2.4,'#dce9ff');
       }
       path(c,samples.map(point),'#7594b98a',2);
       path(c,samples.slice(first,last+1).map(point),purple,2);
@@ -767,7 +772,10 @@ function retrogradeLab(root,api){
         dot(c,x,y,4,purple);text(c,label,x,y+(i===first?23:-14),purple);
       }
       const [x,y]=point([date,ra,dec]);
-      shot(c,x,y,5);
+      if(alt>=0&&elongation>=15)shot(c,x,y,5);
+      else{c.beginPath();c.arc(x,y,5,0,2*Math.PI);c.strokeStyle=gold;c.lineWidth=1.5;c.stroke();}
+      c.restore();
+      if(close.checked&&(ra<minRA||ra>maxRA||dec<minDec||dec>maxDec))text(c,'Jupiter is outside the close-up',w/2,h-45,gold);
     }
   });
   $(root,'retro-status').textContent='Calculating Jupiter’s nightly positions…';
@@ -777,9 +785,13 @@ function retrogradeLab(root,api){
     const first=samples.findIndex((s,i)=>i+1<samples.length&&samples[i+1][1]<s[1]);
     const last=samples.findIndex((s,i)=>i>first&&i+1<samples.length&&samples[i+1][1]>s[1]);
     const oppositionIndex=samples.findIndex(s=>s[0].slice(0,10)===opposition.slice(0,10));
-    data={...result,first,last,oppositionIndex};
+    const bounds=track=>{
+      const ra=track.map(row=>row[1]),dec=track.map(row=>row[2]);
+      return [Math.min(...ra)-2,Math.max(...ra)+2,Math.min(...dec)-1,Math.max(...dec)+1];
+    };
+    data={...result,first,last,oppositionIndex,bounds:bounds(samples),detail:bounds(samples.slice(first,last+1))};
     input.max=samples.length-1;
-    play.disabled=pass.disabled=input.disabled=false;
+    play.disabled=pass.disabled=input.disabled=close.disabled=false;
     setDay(0);
   }).catch(()=>{if(!closed)$(root,'retro-status').textContent='Jupiter’s positions could not be loaded.';});
   let timer;
@@ -789,7 +801,7 @@ function retrogradeLab(root,api){
     if(timer){stop();return;}
     if(input.value===input.max)setDay(0);
     play.textContent='Pause';
-    timer=setInterval(()=>{setDay(+input.value+1);if(input.value===input.max)stop();},85);
+    timer=setInterval(()=>{setDay(+input.value+1);if(input.value===input.max)stop();},55);
   };
   input.onpointerdown=stop;
   pass.onclick=()=>{if(data){stop();setDay(data.oppositionIndex);}};
