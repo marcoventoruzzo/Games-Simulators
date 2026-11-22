@@ -124,6 +124,29 @@ function natalReading(chart,house){
     <p class="fine">This is a symbolic reading of the placements in your chart, using Western tropical signs and equal houses.</p>`;
 }
 
+const magazineTopics=[
+  ['Work','Saturn','Ascendant',['Ask what “done” looks like before volunteering to do more.','Make the awkward follow-up your first task, before it acquires a sequel.']],
+  ['Love','Venus','Sun',['Say what you actually want for dinner. You can work up to the bigger questions.','An invitation with a time and place beats three days of suggestive emojis.']],
+  ['Family','Sun','Moon',['Call the relative you keep meaning to call. Ten minutes counts.','Leave one evening free for the people who know your deeply unglamorous side.']],
+  ['Money','Mercury','Sun',['Give the thing in your cart a night to think about what it’s done.','Pick one recurring expense to look at. Even a tiny subscription can have a dramatic exit.']],
+  ['Well-being','Mars','Moon',['Try leaving one blank square on the calendar. It’s allowed to stay blank.','Make room for the kind of downtime that doesn’t need a progress report.']],
+  ['Travel','Jupiter','Ascendant',['Try a new neighborhood before you start shopping for luggage.','Leave a little room in the itinerary for a detour and an excellent sandwich.']]
+];
+
+function magazineReading(chart,days,best){
+  const birthPoints={...Object.fromEntries(chart.points),Ascendant:chart.ascendant};
+  const opening=Object.fromEntries(days[0][1]);
+  return '<dl class="astro-magazine">'+magazineTopics.map(([topic,planet,target,lines])=>{
+    const hit=[...best.values()].filter(item=>item.planet===planet).sort((a,b)=>a.orb-b.orb)[0];
+    const sign=signName(birthPoints[target]);
+    const line=lines[(signIndex(birthPoints[target])+signIndex(opening[planet]))%lines.length];
+    const cue=hit
+      ? 'The chart cue is '+planet+'’s '+hit.aspect+' to your natal '+hit.target+' around '+readingDate.format(Date.parse(hit.date))+'.'
+      : 'This prompt pairs your '+sign+' '+target+' with '+planet+' in '+signName(opening[planet])+' at the start of the month.';
+    return `<div><dt>${topic}</dt><dd>${line}<small>${cue}</small></dd></div>`;
+  }).join('')+'</dl>';
+}
+
 function monthlyReading(chart,days,end,house){
   const natal=[...chart.points.slice(0,2),['Ascendant',chart.ascendant]];
   const best=new Map();
@@ -151,8 +174,9 @@ function monthlyReading(chart,days,end,house){
   });
   return `<p>Through ${readingDate.format(+end-86400000)} UTC, inclusive by date. Your natal ${signName(natal[0][1])} Sun,
     ${signName(natal[1][1])} Moon, and ${signName(chart.ascendant)} Ascendant are the starting points for this reading.</p>
-    <p><strong>Where your attention might go.</strong> An astrologer follows the Sun through your birth houses to choose themes for the month. Start by thinking about ${houseList[0]}.${houseList.slice(1).map(topic=>' Later in the month the focus turns to '+topic+'.').join('')} The dated contacts below add more specific prompts.</p>
-    ${hits.length?'<ul>'+hits.join('')+'</ul>':'<p>No sampled transit came within 2° of one of the five major aspects to these three natal points this month.</p>'}
+    <p><strong>Where your attention might go.</strong> An astrologer follows the Sun through your birth houses to choose themes for the month. Start by thinking about ${houseList[0]}.${houseList.slice(1).map(topic=>' Later in the month the focus turns to '+topic+'.').join('')} The columns below turn these chart themes into a lighthearted magazine horoscope.</p>
+    ${magazineReading(chart,days,best)}
+    <details><summary>See the transits behind the reading</summary>${hits.length?'<ul>'+hits.join('')+'</ul>':'<p>No sampled transit came within 2° of one of the five major aspects to these three natal points this month.</p>'}</details>
     <p class="fine">This lesson samples once a day at the selected UTC time and uses a 2° tolerance. It highlights up to three close contacts from the Sun and planets, excluding the fast-moving transiting Moon. The interpretations are symbolic and intended for reflection.</p>`;
 }
 
@@ -272,7 +296,8 @@ export function mountAstrology(root,api){
     <div class="lab-actions" data-era><button type="button" data-period="modern" aria-pressed="true">October 4 · modern sky</button><button type="button" data-period="ancient" aria-pressed="false">Around 400 BCE</button></div>
     <p data-drift role="status">Loading the star background…</p><canvas data-precession aria-label="Earth-based view of the Sun against the same background constellations in two eras"></canvas>
     <p>October 4 still falls in the tropical sign of Libra. The modern Sun is actually in front of the stars of Virgo. Around 400 BCE, at the same point in the seasonal year, the Sun was in the part of the sky now mapped as Libra. Earth’s axis slowly changes direction, shifting the March equinox against the stars. The tropical zodiac follows that equinox, so its signs shift relative to the constellations.</p>
-    <p>The strip follows the ecliptic. Its lower bands mark the constellation boundaries along that track. The dots show selected stars, and the Sun’s disk is enlarged.</p></article>
+    <p><strong>During one night:</strong> stars drift east to west as Earth rotates. <strong>At the same clock time on later nights:</strong> those stars also appear farther west (about four minutes earlier each night), because Earth moves around the Sun. Over the year, this brings different zodiac constellations into the evening sky. Against the stars, the Sun itself shifts eastward over the year.</p>
+    <p>The ecliptic’s tilt here is illustrative. Its angle to the local horizon changes with latitude, date, and time. The colored strip below the horizon is a key to the constellation boundaries along the ecliptic. The Sun’s disk is enlarged.</p></article>
     </div>`;
   const q=s=>root.querySelector(s), [,natalCanvas,transitCanvas,precession]=root.querySelectorAll('canvas');
   const ground=mountZodiacSky(q('[data-ground]'),q('[data-sky-controls]'));
@@ -282,34 +307,47 @@ export function mountAstrology(root,api){
     if(!comparison)return;
     const env=canvasContext(precession);if(!env)return;
     const {ctx:c,w,h}=env,{bands,stars}=comparison,sun=comparison[period];
-    const x=offset=>w*(offset+60)/120;
-    const y=lat=>h*.50-lat*Math.min(w/120,h/75);
+    const x=offset=>w*(60-offset)/120;
+    const y=(lat,lon)=>h*.48+lon*h*.0027-lat*Math.min(w/120,h/90);
     c.fillStyle='#0a1326';c.fillRect(0,0,w,h);
-    const axis=y(0), bandTop=h-46;
-    c.strokeStyle='#a4bfdd88';c.setLineDash([4,5]);c.beginPath();c.moveTo(0,axis);c.lineTo(w,axis);c.stroke();c.setLineDash([]);
-    c.font='600 11px system-ui';c.textAlign='left';c.fillStyle=faint;c.fillText('Ecliptic',12,axis+17);
+    const bandTop=h-29,horizon=bandTop-22;
+    c.fillStyle='#121e2b';c.fillRect(0,horizon,w,22);
+    c.strokeStyle='#91a5bb';c.beginPath();c.moveTo(0,horizon);c.lineTo(w,horizon);c.stroke();
+    c.font='600 11px system-ui';c.textAlign='left';c.fillStyle=faint;
+    c.fillText('EAST',8,horizon+15);c.textAlign='right';c.fillText('WEST',w-8,horizon+15);
+    c.textAlign='center';c.fillText('Illustrative horizon',w/2,horizon+15);
+    c.strokeStyle='#a4bfdd99';c.setLineDash([4,5]);c.beginPath();c.moveTo(0,y(0,60));c.lineTo(w,y(0,-60));c.stroke();c.setLineDash([]);
+    c.textAlign='left';c.fillText('Ecliptic',10,y(0,60)-9);
+    const arrow=(caption,py,color)=>{
+      const left=w*.08,right=w*.91;
+      c.strokeStyle=color;c.beginPath();c.moveTo(left,py);c.lineTo(right,py);
+      c.lineTo(right-6,py-4);c.moveTo(right,py);c.lineTo(right-6,py+4);c.stroke();
+      c.fillStyle=color;c.fillText(caption,left,py-5);
+    };
+    arrow('During the night',24,blue);
+    arrow('Same time on later nights',47,gold);
     for(const group of Object.values(stars)){
       c.beginPath();
       let connected=false;
       for(const [lon,lat] of group){
         if(Math.abs(lon)>66){connected=false;continue;}
-        if(connected)c.lineTo(x(lon),y(lat));else c.moveTo(x(lon),y(lat));
+        if(connected)c.lineTo(x(lon),y(lat,lon));else c.moveTo(x(lon),y(lat,lon));
         connected=true;
       }
       c.strokeStyle='#9abbdf66';c.stroke();
       for(const [lon,lat] of group){
         if(Math.abs(lon)>60)continue;
-        c.fillStyle=blue;c.beginPath();c.arc(x(lon),y(lat),2.4,0,Math.PI*2);c.fill();
+        c.fillStyle=blue;c.beginPath();c.arc(x(lon),y(lat,lon),2.4,0,Math.PI*2);c.fill();
       }
     }
     for(const [name,start,end] of bands){
-      const active=name===sun.region,width=x(end)-x(start);
-      c.fillStyle=active?'#724b31':'#233958';c.fillRect(x(start),bandTop,Math.max(0,width-1),34);
+      const active=name===sun.region,width=x(start)-x(end);
+      c.fillStyle=active?'#724b31':'#233958';c.fillRect(x(end),bandTop,Math.max(0,width-1),29);
       if(width<24)continue;
       c.fillStyle=active?gold:faint;c.textAlign='center';c.font='600 11px system-ui';
-      c.fillText(width>c.measureText(name).width+8?name:constellationGlyph(name),x((start+end)/2),bandTop+21,width-4);
+      c.fillText(width>c.measureText(name).width+8?name:constellationGlyph(name),x((start+end)/2),bandTop+18,width-4);
     }
-    const sx=x(sun.offset),sy=y(sun.lat);
+    const sx=x(sun.offset),sy=y(sun.lat,sun.offset);
     const glow=c.createRadialGradient(sx,sy,2,sx,sy,27);
     glow.addColorStop(0,'#ffebac');glow.addColorStop(.37,'#ffbd6388');glow.addColorStop(1,'#ffbd6300');
     c.fillStyle=glow;c.fillRect(sx-27,sy-27,54,54);

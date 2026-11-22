@@ -156,3 +156,9 @@ nav{flex-wrap:wrap}
 .astro-reading{margin-top:16px;padding:14px 16px;border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:10px;background:#101b2e}
 .astro-reading h3{margin-top:0}
 .astro-reading li+li{margin-top:8px}
+.astro-magazine{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:10px}
+.astro-magazine div{padding:10px 12px;background:#16263b;border-radius:8px}
+.astro-magazine dt{font-weight:750;color:var(--blue);margin-bottom:5px}
+.astro-magazine dd{margin:0}
+.astro-magazine small{display:block;margin-top:6px;color:var(--faint)}
+.astro-lab canvas[data-precession]{height:clamp(290px,35vw,370px)}
