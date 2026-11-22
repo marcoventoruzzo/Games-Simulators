@@ -53,7 +53,7 @@ export function mountPlanets(root){
     <p>Pick the Sun or a planet to open its data card. Orbital sizes and planet sizes are illustrative. The faster motions of the inner planets are based on the orbital periods.</p>
     <div class="lab-actions"><button data-flip>Flip to the planet table</button><button data-pause>Pause orbits</button></div>
     <div class="slate"><div class="slate-inner">
-      <div class="slate-face slate-front"><div class="planet-orbit"><canvas aria-label="Animated diagram of the eight planets orbiting the Sun"></canvas>
+      <div class="slate-face slate-front"><div class="planet-orbit"><canvas aria-label="Animated diagram of the eight planets orbiting the Sun, with the Main Asteroid Belt between Mars and Jupiter and the Kuiper Belt beyond Neptune"></canvas>
       <button data-planet="sun" title="Sun" aria-label="Sun" class="orbit-sun"></button>
       ${planets.map(([name,color],i)=>`<button data-planet="${i}" title="${name}" aria-label="${name}" style="--planet:${color}"></button>`).join('')}</div>
       <div class="lab-actions planet-key"><button data-planet="sun">Sun</button>${planets.map(([name],i)=>`<button data-planet="${i}">${name}</button>`).join('')}</div>
@@ -61,6 +61,7 @@ export function mountPlanets(root){
       </div>
       <div class="slate-face slate-back" inert>${comparisonTable()}</div>
     </div></div>
+    <p>The <strong>Main Asteroid Belt</strong> lies between Mars and Jupiter. Beyond Neptune, the <strong>Kuiper Belt</strong> is home to icy bodies, including Pluto.</p>
     <p>The reverse reproduces the comparison in English, with the same planet order and measurements. Seasonal and day–night ranges are illustrative and depend on location, altitude and measurement method. Giant-planet temperatures and gravity refer to atmospheric reference levels.</p>
   </article>`;
   const canvas=root.querySelector('canvas'), panel=root.querySelector('.planet-info');
@@ -75,7 +76,21 @@ export function mountPlanets(root){
     for(let i=0;i<80;i++){
       c.fillStyle='#bdcfff67';c.fillRect((i*137.3%100)*w/100,(i*67.7%100)*h/100,1,1);
     }
-    const radius=Math.min(w*.445,h*.45);
+    const radius=Math.min(w*.405,h*.42);
+    const belts=[
+      {name:'Main Asteroid Belt', inner:.544, outer:.598, color:'#e3b57b', angle:-.72, count:160},
+      {name:'Kuiper Belt', inner:1.025, outer:1.17, color:'#83cde5', angle:1.08, count:320}
+    ];
+    for(const {inner,outer,color,count} of belts){
+      c.fillStyle=color;
+      for(let i=0;i<count;i++){
+        const angle=i*2.399963;
+        const r=radius*(inner+(outer-inner)*((i*.618034)%1));
+        c.globalAlpha=.24+(i%7)*.085;
+        c.fillRect(x+r*Math.cos(angle),y+r*.77*Math.sin(angle),i%5===0?2:1,i%5===0?2:1);
+      }
+    }
+    c.globalAlpha=1;
     c.fillStyle='#ffce79';c.shadowColor='#ffb45d';c.shadowBlur=23;
     c.beginPath();c.arc(x,y,Math.max(8,radius*.055),0,Math.PI*2);c.fill();c.shadowBlur=0;
     dots.forEach((button,i)=>{
@@ -84,6 +99,16 @@ export function mountPlanets(root){
       button.style.left=(x+r*Math.cos(a))+'px';button.style.top=(y-r*.77*Math.sin(a))+'px';
       button.style.setProperty('--disc',([8,11,12,10,19,17,14,14][i])+'px');
     });
+    c.font='600 12px system-ui';
+    c.textBaseline='middle';
+    for(const {name,outer,color,angle} of belts){
+      const px=x+outer*radius*Math.cos(angle),py=y+outer*radius*.77*Math.sin(angle);
+      const width=c.measureText(name).width+12;
+      const tx=Math.min(w-width-5,Math.max(5,px-8)),ty=py+(angle<0?-22:22);
+      c.strokeStyle=color;c.beginPath();c.moveTo(px,py);c.lineTo(tx+8,ty);c.stroke();
+      c.fillStyle='#080e1c';c.fillRect(tx,ty-9,width,18);
+      c.fillStyle=color;c.fillText(name,tx+6,ty);
+    }
   }
   function tick(now){
     if(last)years+=Math.min(50,now-last)/5000;
