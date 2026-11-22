@@ -36,24 +36,21 @@ export function canvasContext(canvas) {
   return {ctx,w,h};
 }
 
-const sprite=document.createElement('canvas');
-sprite.width=sprite.height=112;
-const spriteCtx=sprite.getContext('2d');
-const pixels=spriteCtx.createImageData(112,112);
+const spriteSize=112;
+let sunSprite;
 const normals=[];
-for(let j=0;j<112;j++)for(let i=0;i<112;i++){
-  const x=(i+.5)/56-1,y=1-(j+.5)/56,r=x*x+y*y;
-  if(r<1)normals.push([4*(j*112+i),x,y,Math.sqrt(1-r),i,j]);
+for(let j=0;j<spriteSize;j++)for(let i=0;i<spriteSize;i++){
+  const x=(i+.5)/(spriteSize/2)-1,y=1-(j+.5)/(spriteSize/2),r=x*x+y*y;
+  if(r<1)normals.push([4*(j*spriteSize+i),x,y,Math.sqrt(1-r),i,j]);
 }
 
-function globe(ctx,p,r,body,camera,light,pole=Z,prime=[1,0,0],red=false) {
-  const [cx,cy]=p;
+function makeGlobeSprite(body,camera,light,pole,prime,red){
+  // WebKit may defer drawImage reads. Each submitted sprite must stay immutable.
+  const sprite=document.createElement('canvas');
+  sprite.width=sprite.height=spriteSize;
+  const spriteCtx=sprite.getContext('2d');
+  const pixels=spriteCtx.createImageData(spriteSize,spriteSize);
   const [east,up,front]=camera;
-  if(body==='sun'){
-    const g=ctx.createRadialGradient(cx,cy,r*.7,cx,cy,r*2.2);
-    g.addColorStop(0,'#ffb45162');g.addColorStop(.35,'#ff8c3232');g.addColorStop(1,'#ff672300');
-    ctx.fillStyle=g;ctx.fillRect(cx-r*2.2,cy-r*2.2,r*4.4,r*4.4);
-  }
   const tex=textures[body], side=cross(pole,prime);
   const l=[dot(light,east),dot(light,up),dot(light,front)];
   const ax=[dot(prime,east),dot(prime,up),dot(prime,front)];
@@ -83,6 +80,18 @@ function globe(ctx,p,r,body,camera,light,pole=Z,prime=[1,0,0],red=false) {
     data[q+3]=Math.min(255,z*1600);
   }
   spriteCtx.putImageData(pixels,0,0);
+  return sprite;
+}
+
+function globe(ctx,p,r,body,camera,light,pole=Z,prime=[1,0,0],red=false) {
+  const [cx,cy]=p;
+  if(body==='sun'){
+    const g=ctx.createRadialGradient(cx,cy,r*.7,cx,cy,r*2.2);
+    g.addColorStop(0,'#ffb45162');g.addColorStop(.35,'#ff8c3232');g.addColorStop(1,'#ff672300');
+    ctx.fillStyle=g;ctx.fillRect(cx-r*2.2,cy-r*2.2,r*4.4,r*4.4);
+  }
+  const sprite=body==='sun' ? (sunSprite??=makeGlobeSprite(body,camera,light,pole,prime,false))
+    : makeGlobeSprite(body,camera,light,pole,prime,red);
   ctx.drawImage(sprite,cx-r,cy-r,2*r,2*r);
   if(body==='sun'){
     ctx.strokeStyle='#ffe09e';ctx.lineWidth=1.25;ctx.beginPath();ctx.arc(cx,cy,r,0,TAU);ctx.stroke();
