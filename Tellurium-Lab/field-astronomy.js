@@ -58,19 +58,50 @@ function hourLine(latitude,hour){
 }
 
 function horizontalDial(latitude){
-  const center=[180,125],r=94;
+  const center=[180,158],r=94;
   let ticks='';
   for(let h=6;h<=18;h++){
     const a=hourLine(latitude,h),sx=Math.sin(a),cy=Math.cos(a);
     ticks+=line(center[0],center[1],center[0]+r*sx,center[1]-r*cy,h===12?'field-goldline':'field-guide')+
       label(center[0]+(r+15)*sx,center[1]-(r+15)*cy+4,h===12?'12':String(h%12||12));
   }
-  const a=latitude*rad,ax=86,ay=221,len=63;
-  return figure('Horizontal sundial seen from above and a side view of the tilted rod',
-    `<circle cx="180" cy="125" r="${r}" class="field-plate"/>`+ticks+dot(...center,4)+
-    label(180,15,'TRUE NORTH')+label(66,130,'W')+label(294,130,'E')+
-    line(48,ay,157,ay,'field-guide')+line(ax,ay,ax+len*Math.cos(a),ay-len*Math.sin(a),'field-goldline')+
-    label(172,216,number(latitude,2)+'° above the plate','start')+label(180,244,'Side view · rod points north'));
+  const a=latitude*rad,ax=62,ay=92,len=70;
+  return figure('Horizontal sundial from above with numbered hour marks',
+    `<circle cx="180" cy="158" r="${r}" class="field-plate"/>`+ticks+dot(...center,4)+
+    label(180,22,'TRUE NORTH')+line(180,40,180,29,'field-goldline')+
+    label(49,162,'W')+label(311,162,'E'), '0 0 360 267')+
+    figure('Side view of the wooden rod tilted above the level plate',
+      line(30,ay,155,ay,'field-guide')+line(ax,ay,ax+len*Math.cos(a),ay-len*Math.sin(a),'field-goldline')+
+      label(172,60,number(latitude,2)+'° above the plate','start')+
+      label(172,84,'Upper end points north','start')+
+      label(22,21,'SIDE VIEW','start'), '0 0 360 109');
+}
+
+function combinedDial(hour,longitude){
+  const latitude=43.769*rad, tilt=23.44*rad;
+  const declination=lon=>Math.asin(Math.sin(tilt)*Math.sin(lon*rad));
+  const shadow=(h,decl)=>{
+    const a=(h-12)*15*rad;
+    const up=Math.sin(latitude)*Math.sin(decl)+Math.cos(latitude)*Math.cos(decl)*Math.cos(a);
+    const east=Math.cos(decl)*Math.sin(a)/up;
+    const north=(Math.sin(latitude)*Math.cos(decl)*Math.cos(a)-Math.cos(latitude)*Math.sin(decl))/up;
+    return [180+44*east,224-50*north];
+  };
+  const curve=decl=>Array.from({length:49},(_,i)=>shadow(9+i/8,decl));
+  const path=(points,style)=>`<polyline class="${style}" points="${points.map(p=>p.join(',')).join(' ')}"/>`;
+  let drawing='<rect x="12" y="12" width="336" height="254" rx="10" class="field-plate"/>';
+  for(let h=9;h<=15;h++){
+    const [ax,ay]=shadow(h,-tilt),[bx,by]=shadow(h,tilt);
+    drawing+=line(ax,ay,bx,by,h===12?'field-goldline':'field-guide')+label(bx,by+15,h%12||12);
+  }
+  for(const angle of [-23.44,-20.15,-11.47,0,11.47,20.15,23.44]){
+    drawing+=path(curve(angle*rad),'field-guide');
+  }
+  const decl=declination(longitude), selected=shadow(hour,decl);
+  drawing+=path(curve(decl),'field-cyanline')+dot(...selected,5)+
+    label(180,92,'Winter solstice')+label(180,246,'Summer solstice · shortest shadows')+
+    label(180,261,'Gold dot = shadow tip');
+  return figure('A pavement sundial with radial hour lines and curved calendar lines',drawing,'0 0 360 278');
 }
 
 export function mountMeridian(root,api){
@@ -90,6 +121,16 @@ export function mountMeridian(root,api){
       </div></div>
       <p><strong>Compare with a wristwatch.</strong> Florence is west of the Central European Time reference meridian (15° E), so its local mean noon comes about 15 minutes after 12:00 CET. The equation of time moves apparent noon earlier or later. Summer civil time adds an hour. The checkbox lets you see that hour separately.</p>
       <p><a href="https://cultura.comune.fi.it/system/files/2018-12/La_meridiana_di_Piazza_della_Signoria.pdf">City of Florence · the historic instrument</a></p>
+      <h3>Read the hour and date together</h3>
+      <p>The pavement sundial outside Florence’s Museo Galileo combines both readings. Radial brass lines mark the hours. Curves in the paving mark dates linked to zodiac signs. This simplified model uses the date slider above and lets you move through the day.</p>
+      <div class="field-columns"><div data-combined-dial></div><div>
+        <label>Apparent solar time <input type="range" min="9" max="15" value="14" step=".25" data-combined-hour></label>
+        <output class="lab-readout" data-combined-read></output>
+        <p><strong>Read the hour first.</strong> Follow the shadow tip to the nearest numbered spoke, or estimate between spokes. The numbers are local solar hours, so 2 means 2 p.m. by the Sun.</p>
+        <p><strong>Read the date next.</strong> Follow the curve through that same point. The blue curve is the selected date’s path across the dial. Dates on opposite sides of a solstice can share a curve, so use the current season to tell which date is meant.</p>
+        <p><a href="https://catalogue.museogalileo.it/object/MonumentalSundialOutsideMuseoGalileo.html">Museo Galileo · the pavement sundial</a></p>
+      </div></div>
+
     </article>
     <article class="lab-card"><h3>Build a horizontal dial</h3>
       <p>Use a foam disk, a short wooden dowel, a ruler, a protractor, and a marker. This template is designed for northern midlatitudes. Start with Milan (45.46° N).</p>
@@ -110,6 +151,9 @@ export function mountMeridian(root,api){
     if(!days)return;
     const i=+input.value,[date,,,eq,lon]=days[i],z=Math.floor(lon/30);
     q(root,'[data-florence]').innerHTML=drawFlorence(days,i);
+    const hour=+q(root,'[data-combined-hour]').value;
+    q(root,'[data-combined-dial]').innerHTML=combinedDial(hour,lon);
+    q(root,'[data-combined-read]').textContent=clockTime(hour*60)+' solar time · '+dateFormat.format(Date.parse(date+'T12:00Z'))+' · '+zodiac[z]+' '+zodiacNames[z];
     const offset=4*(15-11.256)+(dst.checked?60:0);
     q(root,'[data-dial-read]').textContent=dateFormat.format(Date.parse(date+'T12:00Z'))+' · '+zodiac[z]+' '+zodiacNames[z]+
       ' · mean noon at '+clockTime(720+offset)+' on your watch · apparent noon at '+clockTime(720+offset-eq)+
@@ -126,7 +170,7 @@ export function mountMeridian(root,api){
       return `<tr><th>${i?twelve(12-i)+' / '+twelve(12+i):'Noon'}</th><td>${number(angle/rad)}°</td><td>${i?number(2*r*Math.sin((angle-previous)/2))+' cm':'—'}</td></tr>`;
     }).join('')}</tbody></table>`;
   }
-  input.oninput=dst.onchange=drawCalendar;
+  q(root,'[data-combined-hour]').oninput=input.oninput=dst.onchange=drawCalendar;
   q(root,'[data-lat]').oninput=q(root,'[data-radius]').oninput=drawBuilder;
   drawBuilder();
   api('florence_dial',[year]).then(data=>{
@@ -183,8 +227,12 @@ export function mountStarNavigation(root){
       <div class="field-columns"><div><div data-night-sight></div><label>Practice the star sight <input data-night-angle type="range" min="0" max="90" step=".5" value="20"></label><output class="lab-readout" data-night-output></output></div>
       <div><p><strong>Start with the North Star.</strong> Follow the two outer stars of the Big Dipper’s bowl toward Polaris. Bring the star’s image down to the north horizon. Twilight often makes it easier to see both. Polaris sits close to the north celestial pole, so an altitude of about 45.5° gives a latitude of about <strong>45.5° N</strong>. For precision, use the Nautical Almanac’s Polaris tables and the normal altitude corrections. South of the equator, navigators can use almanac sights of other stars.</p>
       <p><strong>The missing coordinate.</strong> Latitude alone tells you which parallel you’re on. Longitude requires a time comparison. Earth turns 15° per hour relative to mean solar time. If your local <em>mean</em> noon coincides with 3 p.m. Greenwich mean time, you’re three hours behind Greenwich, or <strong>45° W</strong>. In practice, the equation of time converts observed Sun noon to mean noon, and timed sights can also be reduced with an almanac.</p></div></div>
-      <h4>The Scilly wrecks and Harrison’s clock</h4>
-      <p>In 1707, four Royal Navy ships were lost off the Isles of Scilly. The disaster became a powerful example of the dangers of uncertain position at sea. Parliament’s Longitude Act of 1714 offered up to £20,000 for a practical method. Astronomers pursued lunar distances, while clockmaker John Harrison worked on keeping reference time aboard a moving ship. His compact H4 performed well on an Atlantic trial beginning in 1761. Harrison eventually received payments for his work, including a final parliamentary award in 1773. The original full prize was never formally awarded to any one entrant.</p>
+      <h4>Discovering how to know your longitude</h4>
+      <p><strong>Latitude was the easier coordinate.</strong> When the sky was clear, sailors could measure the altitude of the midday Sun or Polaris and estimate how far north or south they were. The same altitude at local noon could occur anywhere along that parallel. To find their east–west position, they needed to know what time it was at a reference meridian when their own Sun reached noon. An ordinary shipboard clock could lose that reference over a long voyage. Navigators often estimated their position from course, speed, and elapsed time. Currents, wind, and small measuring errors could push that estimate a long way off.</p>
+      <p><strong>The charts had a related problem.</strong> A surveyor could often establish the latitude of a coastal landmark from the sky. Its longitude was harder to tie to a distant reference point. Many older charts therefore placed coasts or islands too far east or west, even where their latitudes were better known. A navigator could be working with an uncertain ship position and a chart with errors of its own.</p>
+      <p><strong>The Scilly wrecks, 1707.</strong> Four Royal Navy ships struck reefs off the Isles of Scilly. The fleet misjudged its position as it approached the English Channel after a voyage in poor weather. Uncertain longitude was part of the navigation problem that made such errors dangerous. The surviving evidence also leaves room for errors in latitude, dead reckoning, and the charts. The exact contribution of each is uncertain. The disaster became an enduring example of why ships needed a reliable way to fix their position.</p>
+      <p><strong>A clock that could keep Greenwich time at sea.</strong> Parliament’s Longitude Act of 1714 offered up to £20,000 for a practical method. Astronomers used the Moon as a moving clock, measuring its angle from a star and checking an almanac. John Harrison pursued the mechanical solution. His H4 kept reference time well on a sea trial that began in 1761. If a navigator found that local mean noon came at 3 p.m. by the reference clock, the ship was 45° west of the reference meridian. Harrison eventually received payments, including a parliamentary award in 1773. Nobody formally received the full original prize.</p>
+      <p><a href="https://historicengland.org.uk/listing/what-is-designation/heritage-highlights/sinking-of-ship-lead-to-invention-of-marine-chronometer">Historic England · the Scilly wrecks</a> · <a href="https://www.royalobservatorygreenwich.org/articles.php?article=1290">Royal Observatory Greenwich · the longitude problem</a></p>
       <p><a href="https://www.rmg.co.uk/stories/time/harrisons-clocks-longitude-problem">Royal Museums Greenwich · Harrison’s timekeepers</a> · <a href="https://aa.usno.navy.mil/data/celnav">U.S. Naval Observatory · sight corrections</a></p>
     </article>
     <article class="lab-card"><h3>3 · Find a rough compass direction with a watch</h3>
