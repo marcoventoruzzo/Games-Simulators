@@ -92,16 +92,20 @@ function combinedDial(hour,longitude){
   let drawing='<rect x="12" y="12" width="336" height="254" rx="10" class="field-plate"/>';
   for(let h=9;h<=15;h++){
     const [ax,ay]=shadow(h,-tilt),[bx,by]=shadow(h,tilt);
-    drawing+=line(ax,ay,bx,by,h===12?'field-goldline':'field-guide')+label(bx,by+15,h%12||12);
+    const tickX=180+(h-12)*24;
+    drawing+=line(ax,ay,bx,by,'field-guide')+line(bx,by,tickX,230,'field-guide')+label(tickX,242,h%12||12);
   }
   for(const angle of [-23.44,-20.15,-11.47,0,11.47,20.15,23.44]){
     drawing+=path(curve(angle*rad),'field-guide');
   }
   const decl=declination(longitude), selected=shadow(hour,decl);
-  drawing+=path(curve(decl),'field-cyanline')+dot(...selected,5)+
-    label(180,92,'Winter solstice')+label(180,246,'Summer solstice · shortest shadows')+
-    label(180,261,'Gold dot = shadow tip');
-  return figure('A pavement sundial with radial hour lines and curved calendar lines',drawing,'0 0 360 278');
+  const [topX,topY]=shadow(hour,-tilt),[endX,endY]=shadow(hour,tilt);
+  const hourLabelX=180+(hour-12)*24;
+  drawing+=path(curve(decl),'field-cyanline')+line(topX,topY,endX,endY,'field-goldline')+
+    line(endX,endY,hourLabelX,230,'field-goldline')+
+    dot(...selected,5.5)+label(180,92,'Long winter shadows')+
+    label(180,263,'Gold line: hour · blue curve: date');
+  return figure('Follow the gold line down from the shadow tip to read the hour. Follow the blue curve through that same point to read the date.',drawing,'0 0 360 278');
 }
 
 export function mountMeridian(root,api){
@@ -122,12 +126,17 @@ export function mountMeridian(root,api){
       <p><strong>Compare with a wristwatch.</strong> Florence is west of the Central European Time reference meridian (15° E), so its local mean noon comes about 15 minutes after 12:00 CET. The equation of time moves apparent noon earlier or later. Summer civil time adds an hour. The checkbox lets you see that hour separately.</p>
       <p><a href="https://cultura.comune.fi.it/system/files/2018-12/La_meridiana_di_Piazza_della_Signoria.pdf">City of Florence · the historic instrument</a></p>
       <h3>Read the hour and date together</h3>
-      <p>The pavement sundial outside Florence’s Museo Galileo combines both readings. Radial brass lines mark the hours. Curves in the paving mark dates linked to zodiac signs. This simplified model uses the date slider above and lets you move through the day.</p>
+      <p>Imagine a stick casting a shadow on the pavement. The gold dot is the very end of that shadow. A real sundial outside Florence’s Museo Galileo uses that one spot to tell you both the time and the time of year.</p>
       <div class="field-columns"><div data-combined-dial></div><div>
-        <label>Apparent solar time <input type="range" min="9" max="15" value="14" step=".25" data-combined-hour></label>
+        <label>Move through the day <input type="range" min="9" max="15" value="14" step=".25" data-combined-hour></label>
+        <label>Change the date <input type="range" min="0" max="364" value="45" data-combined-date></label>
         <output class="lab-readout" data-combined-read></output>
-        <p><strong>Read the hour first.</strong> Follow the shadow tip to the nearest numbered spoke, or estimate between spokes. The numbers are local solar hours, so 2 means 2 p.m. by the Sun.</p>
-        <p><strong>Read the date next.</strong> Follow the curve through that same point. The blue curve is the selected date’s path across the dial. Dates on opposite sides of a solstice can share a curve, so use the current season to tell which date is meant.</p>
+        <ol>
+          <li><strong>Find the dot.</strong> That is where the stick’s shadow ends. Start with February 15 at 2 p.m., the example shown when you open this page.</li>
+          <li><strong>Read the time.</strong> Trace the straight gold line from the dot down to the numbers. It points to <strong>2</strong>, meaning 2 p.m. by the Sun. If it points between two numbers, the time is between those hours.</li>
+          <li><strong>Read the date.</strong> Go back to the same dot and follow the curved blue line across the dial. On a real dial, you’d look for the date or zodiac marks along these curves. Here, the answer above tells you which date the blue curve represents. Two dates in different seasons can share the same curve, so knowing the season helps you pick the right one.</li>
+          <li><strong>Try both sliders.</strong> Move the time from 2 p.m. to 3 p.m. The dot slides along the <em>same blue curve</em>. Then change the date and leave the time alone. Now the dot slides along the <em>same straight hour line</em> to a different blue curve.</li>
+        </ol>
         <p><a href="https://catalogue.museogalileo.it/object/MonumentalSundialOutsideMuseoGalileo.html">Museo Galileo · the pavement sundial</a></p>
       </div></div>
 
@@ -146,6 +155,7 @@ export function mountMeridian(root,api){
     </article>
   </div>`;
   const year=new Date().getFullYear(),input=q(root,'[data-dial-date]'),dst=q(root,'[data-dst]');
+  const combinedDate=q(root,'[data-combined-date]');
   let days=null,closed=false;
   function drawCalendar(){
     if(!days)return;
@@ -170,12 +180,14 @@ export function mountMeridian(root,api){
       return `<tr><th>${i?twelve(12-i)+' / '+twelve(12+i):'Noon'}</th><td>${number(angle/rad)}°</td><td>${i?number(2*r*Math.sin((angle-previous)/2))+' cm':'—'}</td></tr>`;
     }).join('')}</tbody></table>`;
   }
-  q(root,'[data-combined-hour]').oninput=input.oninput=dst.onchange=drawCalendar;
+  input.oninput=()=>{combinedDate.value=input.value;drawCalendar()};
+  combinedDate.oninput=()=>{input.value=combinedDate.value;drawCalendar()};
+  q(root,'[data-combined-hour]').oninput=dst.onchange=drawCalendar;
   q(root,'[data-lat]').oninput=q(root,'[data-radius]').oninput=drawBuilder;
   drawBuilder();
   api('florence_dial',[year]).then(data=>{
     if(closed)return;
-    days=data;input.max=days.length-1;drawCalendar();
+    days=data;combinedDate.max=input.max=days.length-1;drawCalendar();
   }).catch(()=>{if(!closed)q(root,'[data-dial-read]').textContent='The calendar could not be calculated.'});
   return ()=>{closed=true};
 }
