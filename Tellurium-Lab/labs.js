@@ -300,20 +300,23 @@ function drawRainbow(root){
 }
 
 const starExamples=[
- ['Sun ☉',5772,0,'#ffe2a5',9,-9],['Proxima Centauri',3050,-2.8,'#ff967b',-7,-10],
- ['Sirius A',9940,1.4,'#b6d9ff',8,-9],['Betelgeuse',3600,5.0,'#ff9a7b',-7,-9],
+ ['Sun ☉',5772,0,'#ffe2a5',9,14],['Proxima Centauri',3050,-2.8,'#ff967b',-7,-10],
+ ['Sirius A',9940,1.4,'#b6d9ff',-8,12],['Vega',9600,1.6,'#b6d9ff',8,-8],
+ ['Spica A',25300,4.31,'#9ac8ff',-8,13],['Rigel',12100,5.08,'#9ac8ff',-8,13],
+ ['Polaris Aa',6000,3.4,'#fff0c7',-8,-9],['Arcturus',4290,2.23,'#ffb982',-8,-9],
+ ['Antares A',3600,4.82,'#ff9a7b',-8,14],['Betelgeuse',3600,5.0,'#ff9a7b',-7,-9],
  ['Sirius B',25000,-1.6,'#d4ecff',8,13]
 ];
 const solarTrack=[
   [0,3500,.65,'Formation in a collapsing cloud'],
-  [.05,5600,-.16,'Hydrogen fusion begins'],
-  [4.57,5772,0,'The Sun today'],
-  [10.5,5500,.38,'Hydrogen runs low in the core'],
-  [12.1,3100,3.0,'Red giant'],
+  [.05,5600,-.16,'Hydrogen fusion begins','The young Sun starts fusing hydrogen into helium in its core. It settles onto the main sequence and will spend billions of years near this part of the diagram.'],
+  [4.57,5772,0,'The Sun today','The surface is about 5,770 K. Deep inside, the much hotter core still has enough hydrogen to fuse.'],
+  [10.5,5500,.38,'Hydrogen runs low in the core','The graph measures surface temperature. As hydrogen runs out in the core, the core contracts and heats up. Hydrogen begins fusing in a shell around it, and the outer layers expand. Along this part of the track, the surface cools.'],
+  [12.1,3100,3.0,'Red giant','Notice the move up and right. Each square meter of the cooler surface gives off less light, but the surface is so much bigger that the whole star shines more brightly.'],
   [12.2,4800,1.8,'Helium fusion in the core'],
   [12.35,2850,3.65,'Late giant and envelope loss'],
-  [12.36,90000,3.20,'Hot exposed core and planetary nebula'],
-  [12.45,37000,-1.15,'White dwarf'],
+  [12.36,90000,3.20,'Hot exposed core and planetary nebula','The Sun sheds its outer layers and exposes its hot core. The track moves far to the left as the visible surface gets hotter.'],
+  [12.45,37000,-1.15,'White dwarf','The remnant is still hot, but it is very small. It gives off little light overall and will gradually cool.'],
   [20,6500,-3.75,'White dwarf cooling']
 ];
 function arrowPath(c,points,color){
@@ -323,10 +326,12 @@ function arrowPath(c,points,color){
 }
 function starLab(root){
   root.innerHTML=card('The Hertzsprung–Russell diagram',
-    '<p><strong>Start with one dot.</strong> Find Sirius A. Its position tells you two things: its surface is hotter than the Sun’s (farther left), and it gives off more light in total (higher up). The axes measure temperature and luminosity. Time enters only when you follow an individual star.</p>'+
-    '<ul class="hr-key"><li><span class="hr-population"></span><strong>Shaded bands</strong> show where many stars fall on this map. Think of a snapshot of many stars at different stages of life.</li><li><span class="hr-track"></span><strong>Gold arrows</strong> show the modeled life of one star, the Sun. Turn on its track or press Play to follow it.</li></ul>'+
+    '<p><strong>Start with one dot.</strong> Find Sirius A. Its position tells you two things: its surface is hotter than the Sun’s (farther left), and it gives off more light in total (higher up). The axes measure temperature and luminosity. The diagram has no time axis. A single star can move across it as its surface temperature and luminosity change. It can leave one band and reach another, passing through the space in between. Different masses follow different paths.</p>'+
+    '<ul class="hr-key"><li><span class="hr-population"></span><strong>Shaded bands</strong> show where many stars fall on this map. Think of a snapshot of many stars at different stages of life.</li><li><svg class="hr-legend-arrow" viewBox="0 0 24 12" aria-hidden="true"><path d="M1 6h20m-5-4 5 4-5 4" fill="none" stroke="#ffd087" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><strong>Gold arrows</strong> show the modeled life of one star, the Sun. Turn on its track or press Play to follow it.</li></ul>'+
     canvas('hr','Hertzsprung–Russell diagram with stellar populations and the evolutionary path of the Sun',true)+
     '<div class="lab-actions"><button id="sun-play">Play the Sun’s life</button><label><input id="hr-track" type="checkbox"> Show the Sun’s life track</label></div>'+slider('sun-age','Sun’s age (billion years)',0,20,4.57,.01)+out('sun-stage')+
+    '<aside class="hr-milestone" aria-live="polite"><div id="sun-milestone" hidden><strong></strong><p></p></div></aside>'+
+    '<p>The named stars are approximate reference points. For systems such as Spica, Polaris, and Antares, the label refers to the primary star shown.</p>'+
     '<p>The diagonal <strong>main sequence</strong> contains stars fusing hydrogen in their cores. Mass largely determines where a star settles on it. The Sun spends most of its life near its current spot. Later it moves up and right as a cooler, brighter giant. After shedding its outer layers, the hot remnant moves down into the white-dwarf region and gradually cools. The track and ages are approximate.</p>'+
     '<div class="lab-rows"><div><h3>Sun-like stars</h3><p>Hydrogen fusion on the main sequence → red giant → gas shed into space → white dwarf. Sirius B is a white dwarf.</p></div>'+
     '<div><h3>Massive stars</h3><p>Short-lived hot main-sequence star → evolved giant or stripped star → core collapse. A neutron star can remain, or a black hole can form. The outcome depends on the final core, mass loss and companions.</p></div></div>');
@@ -365,7 +370,7 @@ function starLab(root){
     }
     text(c,'Main sequence',x(18000),y(2.6)+17,muted);
     text(c,'Giants',x(4650),y(3.5),muted);
-    text(c,'Supergiants',x(10000),y(5.5)-8,muted);
+    text(c,'Supergiants',x(10000),y(6.35),muted);
     text(c,'White dwarfs',x(23000),y(-3.2),muted);
     const coord=([t,l])=>[x(t),y(l)];
     const track=solarTrack.map(([,t,l])=>coord([t,l]));
@@ -374,7 +379,12 @@ function starLab(root){
       for(let i=1;i<track.length;i++)arrowPath(c,track.slice(i-1,i+1),'#ffd087');
     }
     for(const [n,v,l,col,dx,dy] of starExamples){
-      dot(c,x(v),y(l),3.6,col);text(c,n,x(v)+dx,y(l)+dy,col,dx<0?'right':'left');
+      dot(c,x(v),y(l),3.6,col);
+      c.font='600 12px system-ui';
+      const width=c.measureText(n).width;
+      const tx=Math.max(left,Math.min(right-width+8,x(v)+dx-(dx<0?width:0)));
+      line(c,[x(v),y(l)],[dx<0?tx+width:tx,y(l)+dy-4],col+'88');
+      text(c,n,tx,y(l)+dy,col,'left');
     }
     const age=+$(root,'sun-age').value;
     const next=solarTrack.findIndex(([t])=>t>age), j=next===-1?solarTrack.length-2:next-1;
@@ -385,13 +395,25 @@ function starLab(root){
   };
   const detach=attach(root,draw), input=$(root,'sun-age');
   let index=0, playing=false, age=0;
+  const milestone=$(root,'sun-milestone');
+  function showMilestone(stage){
+    milestone.hidden=!stage?.[4];
+    if(milestone.hidden)return;
+    milestone.querySelector('strong').textContent=stage[3];
+    milestone.querySelector('p').textContent=stage[4];
+  }
   const go=$(root,'sun-play');
   const dispose=clock(go,()=>{
     const end=solarTrack[index+1][0], start=solarTrack[index][0];
     const next=Math.min(end,age+(end-start)/14);age=next;
     input.value=next.toFixed(2);draw();
     if(next>=end-1e-9){
-      if(++index===solarTrack.length-1){go.click();}
+      const stage=solarTrack[++index];
+      if(stage[4]||index===solarTrack.length-1){
+        go.click();
+        showMilestone(stage);
+        if(stage[4])go.textContent='Continue the Sun’s life';
+      }
     }
   });
   go.addEventListener('click',()=>{
@@ -399,6 +421,7 @@ function starLab(root){
       const trackSwitch=$(root,'hr-track');
       if(!trackSwitch.checked||+input.value>=20)input.value=0;
       trackSwitch.checked=true;
+      showMilestone();
       age=+input.value;
       index=Math.max(0,solarTrack.findIndex(([t])=>t>age)-1);
       draw();
@@ -406,8 +429,13 @@ function starLab(root){
     playing=!playing;
     if(!playing)go.textContent='Play the Sun’s life';
   });
-  input.addEventListener('input',()=>{if(playing)go.click();$(root,'hr-track').checked=true;draw();});
-  $(root,'hr-track').addEventListener('change',event=>{if(!event.target.checked&&playing)go.click();});
+  input.addEventListener('input',()=>{
+    if(playing)go.click();
+    $(root,'hr-track').checked=true;
+    showMilestone(solarTrack.find(([time])=>time===+input.value));
+    draw();
+  });
+  $(root,'hr-track').addEventListener('change',event=>{if(!event.target.checked){if(playing)go.click();showMilestone();}});
   return ()=>{detach();dispose();};
 }
 
