@@ -36,7 +36,18 @@
       <span id="scale-note">Body sizes and distances enlarged for clarity</span>
       <div class="zoom" id="zoom-controls"><button id="minus" aria-label="Zoom out">−</button><button id="plus" aria-label="Zoom in">+</button></div>
     </div>
-    <div class="timeline">
+    <div id="orbit-controls" class="timeline" hidden>
+      <div class="transport"><button id="orbit-play">Play year</button><output id="orbit-progress"></output></div>
+      <label class="sr-only" for="orbit-scrub">Day in the model year</label>
+      <input id="orbit-scrub" type="range" min="0" max="365.256" step=".01" value="0">
+      <div class="tick-labels"><span>Start of orbit</span><span>Halfway</span><span>One year</span></div>
+    </div>
+    <div class="timeline" id="calendar-controls">
+      <section id="solstice-panel" class="phase-checkpoint solstice-checkpoint" hidden aria-labelledby="solstice-title">
+        <div class="checkpoint-copy" aria-live="polite"><h3 id="solstice-title"></h3><p id="solstice-note"></p></div>
+        <canvas id="solstice-rays" aria-label="Parallel sunlight spreads over different surface lengths at 45 degrees north and south."></canvas>
+        <button id="solstice-resume">Resume playback</button>
+      </section>
       <section id="phase-popup" class="phase-checkpoint" hidden aria-labelledby="checkpoint-title">
         <div class="checkpoint-disc">
           <canvas id="checkpoint-disc" class="disc" aria-label="Moon as seen from Earth"></canvas>
@@ -53,7 +64,7 @@
         <button id="play" aria-label="Play">▶</button>
         <button id="forward" aria-label="Step forward">Step</button>
         <label class="date-control">Date and time <input id="date" type="datetime-local" min="1900-01-01T00:00" max="2100-12-31T23:59" aria-label="Date and time in UTC"></label>
-        <label>Playback speed <select id="speed" aria-label="Playback speed"><option value=".0069444444">10 min/s</option><option value=".083333333">2 hr/s</option><option value="1" selected>1 day/s</option><option value="6">6 days/s</option></select></label>
+        <label>Playback speed <select id="speed" aria-label="Playback speed"><option value=".0069444444">10 min/s</option><option value=".083333333">2 hr/s</option><option value="1" selected>1 day/s</option><option value="6">6 days/s</option><option id="season-speed" value="30" hidden>30 days/s</option></select></label>
         <button id="today">Now</button>
       </div>
       <label class="sr-only" for="scrub">Scrub around the selected date</label>

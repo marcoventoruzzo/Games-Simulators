@@ -37,3 +37,8 @@ input[type=range]{width:100%;margin:11px 0 0;accent-color:var(--blue);cursor:poi
 @media(max-width:530px){.phase-checkpoint{grid-template-columns:auto minmax(0,1fr);gap:7px 10px}.phase-checkpoint #resume{grid-column:2;justify-self:start}}
 .day-bars{display:grid;gap:6px}.day-bars label{display:grid;grid-template-columns:42px 1fr;align-items:center;font-size:.77rem;color:var(--faint)}
 .day-bars meter{width:100%;grid-column:1/-1;accent-color:var(--gold)}
+#case-title{margin-top:14px}
+.solstice-checkpoint{grid-template-columns:minmax(0,1fr) auto}
+#solstice-rays{grid-column:1/-1;height:140px;background:#101d30;border-radius:8px}
+#solstice-resume{grid-column:1/-1;justify-self:start}
+#orbit-progress{align-self:center;color:var(--faint);font:.8rem var(--mono)}

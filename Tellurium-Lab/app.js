@@ -1,4 +1,4 @@
-import {loadTextures,render,phaseDisc,skyChart,skyDome,dot,unit} from './scene.js';
+import {loadTextures,render,phaseDisc,skyChart,skyDome,dot,unit,solsticeDiagram} from './scene.js';
 
 const $=id=>document.getElementById(id);
 const DAY=86400000,HOUR=DAY/24,MIN=Date.UTC(1900,0,1),MAX=Date.UTC(2101,0,1)-60000;
@@ -9,17 +9,25 @@ const clamp=t=>Math.max(MIN,Math.min(MAX,t));
 const names=['New Moon','Waxing Crescent','First Quarter','Waxing Gibbous','Full Moon','Waning Gibbous','Last Quarter','Waning Crescent'];
 const presets={top:[-Math.PI/2,Math.PI/2],tilt:[-Math.PI/2,.68],edge:[-Math.PI/2,.025]};
 const configs={
-  phases:['EARTH-CENTERED','The lunar cycle','Body sizes and distances enlarged for clarity'],
+  phases:['EARTH-CENTERED','The lunar cycle','Fixed Earth map · sizes and distances enlarged'],
   eclipse:['ECLIPSE GEOMETRY','How shadows make eclipses','Schematic geometry · body sizes, shadows, and tilt enlarged'],
-  orbit:['SUN-CENTERED','Two paths around the Sun','Earth’s path is drawn to scale'],
+  orbit:['SUN-CENTERED','One year around the Sun','Circular orbit model · body markers enlarged'],
   seasons:['EARTH’S YEAR','One orbit. Two opposite seasons.','Orbit shape to scale · Sun, Earth, and axis enlarged']
 };
 let api, view='phases', selected=clamp(Date.now()), anchor=selected, dayStart=Math.floor(selected/DAY)*DAY;
-let camera={az:presets.tilt[0],el:presets.tilt[1],zoom:1},frame,sky,trajectory,trajectoryKey;
+let camera={az:presets.tilt[0],el:presets.tilt[1],zoom:1},frame,sky;
 let latitude=45.4642,longitude=9.19,gain=20,playing=false,timer,busy=false,pending=false,revision=0;
-let eventLabel='', skyKey='', drag=null, playToken=0, checkpoint=null, seasonKey;
-let sestriEvent;
-const lesson={eclipse:'solar',sestri:null,season:null};
+let skyKey='', drag=null, playToken=0, checkpoint=null, seasonKey, solstice=null;
+let orbitTimer, orbitPlaying=false;
+const ORBIT_YEAR=365.256;
+const lesson={eclipse:'solar-miss',season:null,orbitDay:0,orbitView:'top'};
+const cases={
+ 'solar-miss':['New Moon · no eclipse','The Moon crosses the Sun’s direction in longitude well away from a node. The shadow passes above or below Earth.'],
+ 'solar-total':['Total solar eclipse','The Moon comes between the Sun and Earth. Observers in the narrow umbra see the whole solar disk covered. Observers in the surrounding penumbra see a partial eclipse.'],
+ 'solar-partial':['Partial solar eclipse','Only the Moon’s penumbra reaches Earth in this example. From inside it, the Moon covers part of the solar disk.'],
+ 'lunar-total':['Total lunar eclipse','Earth comes between the Sun and the full Moon. The whole Moon enters Earth’s umbra and can glow red as filtered sunlight bends through Earth’s atmosphere.'],
+ 'lunar-partial':['Partial lunar eclipse','Only part of the full Moon enters Earth’s umbra. The edge of Earth’s shadow is visible on the Moon.']
+};
 const quarterNotes=[
   'The lit half faces away from Earth. From here we see almost none of it.',
   'Sunlight strikes the Moon from the side as seen from Earth. About half the visible disk is lit, and the lit portion is growing.',
@@ -72,16 +80,14 @@ const guides={
       <details open><summary>Why the shape changes</summary><p>Follow the gold arrows from the Sun. They always light the half of the Moon facing the Sun. The dotted blue line marks Earth’s view. Compare the orbit with the disk above to see how much of the lit half faces us.</p></details>
     </div>`,
   eclipse:`
-    <div class="guide-card"><h3>What goes into shadow?</h3>
-      <div class="actions"><button data-eclipse="solar">Solar eclipse</button><button data-eclipse="lunar">Lunar eclipse</button><button data-eclipse="sestri">Sestri Levante · 2026</button></div>
-      <p id="eclipse-explainer"></p><p class="callout" id="shadow-state"></p>
-      <div class="actions" id="sestri-controls" hidden><button data-local="begin">First contact</button><button data-local="peak">Maximum</button><button data-local="sunset">Sunset</button></div>
-      <p id="event-label" role="status"></p>
+    <div class="guide-card"><h3>Compare the alignments</h3>
+      <div class="actions">${Object.entries(cases).map(([key,[title]])=>'<button data-eclipse="'+key+'">'+title+'</button>').join('')}</div>
+      <h3 id="case-title"></h3><p id="eclipse-explainer"></p>
     </div>
     <div class="guide-card"><h3>Why most months miss</h3>
-      <p>The Moon’s orbital plane is tilted about 5°. The lines in the lower diagram cross at a <strong>node</strong>. A new or full Moon near a node can produce an eclipse.</p>
-      <details open><summary>Two kinds of shadow</summary><p>Dark violet marks the umbra, where the Sun is fully blocked. Light violet marks the penumbra, where the Sun is partly blocked.</p></details>
-      <div class="actions"><button data-event="solar">Find next solar eclipse</button><button data-event="lunar">Find next lunar eclipse</button></div>
+      <p>A <strong>node</strong> is where the Moon crosses Earth’s orbital plane. A new or full Moon must be near a node for the bodies to line up closely enough. The ~5° tilt is exaggerated in the drawing.</p>
+      <p><strong>Umbra</strong> is the inner shadow, where the whole Sun is blocked. In the <strong>penumbra</strong> only part of the Sun is blocked.</p>
+      <details><summary>Sestri Levante, August 2026</summary><p>At maximum in Sestri, the Moon covered 93.5% of the Sun. Sestri was in the penumbra of an eclipse that was total elsewhere.</p></details>
     </div>`,
   seasons:`
     <div class="guide-card"><h3>Follow Earth through the year</h3>
@@ -99,15 +105,16 @@ const guides={
       <p>Earth is usually <strong>farthest in early July</strong> and <strong>closest in early January</strong>. The tilt drives the seasons. At an equinox, the Sun is overhead at the equator and day and night are nearly equal.</p>
     </div>`,
   orbit:`
-    <div class="guide-card"><h3>Earth and Moon in motion</h3>
-      <div class="metrics"><div class="metric"><strong id="earth-speed">—</strong>Earth vs. Sun</div><div class="metric"><strong id="moon-speed">—</strong>Moon vs. Earth</div></div>
-      <div class="actions" aria-label="Moon offset scale"><button data-gain="1">True scale</button><button data-gain="10">10× separation</button><button data-gain="20">20× separation</button></div>
-      <p>Blue is Earth’s path. Gold is the Moon’s. Magnification expands only the Earth–Moon separation.</p>
+    <div class="guide-card"><h3>Choose your viewpoint</h3>
+      <div class="actions"><button data-orbit-view="top">Above the solar system</button><button data-orbit-view="sun">From the Sun</button></div>
+      <div class="actions" id="orbit-gains"><button data-gain="1">True scale</button><button data-gain="20">20× Moon offset</button></div>
+      <p id="orbit-explainer"></p>
     </div>
-    <div class="guide-card"><h3>Why there are no loops</h3>
-      <p class="callout">In the Sun’s frame the Moon keeps moving forward. Its roughly 1 km/s motion relative to Earth adds to or subtracts from Earth’s roughly 30 km/s motion around the Sun.</p>
-      <details open><summary>What the curved lines show</summary><p>The plot follows a 72-day arc in a fixed frame. In the top view, changes in the Moon’s distance from the Sun make the gold trace sway across the blue one. Tilt or switch to Edge to see motion out of the ecliptic. The magnified paths are illustrations.</p></details>
+    <div class="guide-card"><h3>Why the Moon keeps moving forward</h3>
+      <p>Earth travels around the Sun at about 30 km/s. The Moon moves around Earth at about 1 km/s. The small lunar motion periodically adds to or subtracts from the much faster shared motion.</p>
+      <details><summary>About the model</summary><p>Uses mean periods (365.26 and 27.32 days), mean distances and coplanar circular orbits. The Moon’s cycle continues across the end of each model year. From the Sun, successive near-side passages are about 29.5 days apart.</p></details>
     </div>`
+
 };
 
 const hints=[
@@ -122,7 +129,7 @@ const hints=[
 ];
 
 function updateGuide(){
-  if(!frame)return;
+  if(!frame&&(view==='phases'||view==='seasons'))return;
   if(view==='phases'){
     const angle=frame.phase;
     const p=Math.round(angle/45)%8;
@@ -141,18 +148,10 @@ function updateGuide(){
       phaseDisc($('checkpoint-disc'),frame,!$('sky').hidden&&!!frame.skyView);
     }
   } else if(view==='eclipse'){
-    const local=lesson.eclipse==='sestri';
-    $('sestri-controls').hidden=!local;
-    $('eclipse-explainer').textContent=local
-      ? 'On August 12, 2026, Sestri saw a deep partial eclipse. The small disk shows the Sun from Sestri as the Moon passes in front.'
-      : lesson.eclipse==='solar'
-        ? 'At new Moon, the Moon can pass between the Sun and Earth. The Moon’s shadow falls on a small part of Earth.'
-        : 'At full Moon, Earth can pass between the Sun and Moon. The Moon darkens as it moves through Earth’s shadow.';
+    const [title,note]=cases[lesson.eclipse];
+    $('case-title').textContent=title;
+    $('eclipse-explainer').textContent=note;
     for(const b of $('guide').querySelectorAll('[data-eclipse]'))b.setAttribute('aria-pressed',String(b.dataset.eclipse===lesson.eclipse));
-    $('shadow-state').textContent=local&&lesson.sestri&&sestriEvent
-      ? 'Maximum: '+(100*sestriEvent.coverage).toFixed(1)+'% of the Sun covered · '+clock(sestriEvent.peak)+' UTC / 8:22 p.m. local. '+(selected>=Date.parse(sestriEvent.sunset)?'The Sun has set.':'Sun altitude now: '+lesson.sestri.altitude.toFixed(1)+'°.')
-      : frame.shadow==='Shadows miss'?'At this time, the shadows miss.':frame.shadow;
-    $('event-label').textContent=eventLabel;
   } else if(view==='seasons'){
     $('axis-tilt').textContent=frame.obliquity.toFixed(2)+'°';
     $('solar-distance').textContent=(frame.solar_distance/1e6).toFixed(1)+' million km';
@@ -163,9 +162,13 @@ function updateGuide(){
       $(id+'-meter').value=frame.daylight[i];
       $(i===0?'day-n':'day-s').textContent=frame.daylight[i].toFixed(1)+' hours of daylight';
     }
-  } else {
-    $('earth-speed').textContent=frame.speeds[0].toFixed(2)+' km/s';
-    $('moon-speed').textContent=frame.speeds[1].toFixed(2)+' km/s';
+    if(solstice){
+      const north=solstice==='jun_solstice';
+      $('solstice-title').textContent=seasonNames[solstice];
+      $('solstice-note').textContent='Identically spaced rays hit a shorter stretch of ground at 45° '+(north?'N':'S')+
+        '. The higher midday Sun concentrates the same beam, and daylight lasts longer there.';
+      solsticeDiagram($('solstice-rays'),dec);
+    }
   }
 }
 
@@ -183,10 +186,13 @@ function setView(name){
     else button.removeAttribute('aria-current');
   }
   if(name!=='phases')$('sky').hidden=true;
-  $('camera-controls').hidden=name==='eclipse';
-  $('zoom-controls').hidden=name==='eclipse';
-  if(name==='eclipse')$('speed').selectedIndex=0;
-  else if($('speed').selectedIndex===0)$('speed').selectedIndex=2;
+  const undated=name==='eclipse'||name==='orbit';
+  for(const id of ['camera-controls','zoom-controls','calendar-controls','stamp'])$(id).hidden=undated;
+  $('orbit-controls').hidden=name!=='orbit';
+  const seasonSpeed=$('season-speed');
+  seasonSpeed.hidden=name!=='seasons';
+  if(name==='seasons')$('speed').value='30';
+  else if($('speed').value==='30')$('speed').value='1';
   const [label,title,note]=configs[name];
   $('frame-label').textContent=label;$('scene-title').textContent=title;$('scale-note').textContent=note;
   $('guide').innerHTML=guides[name];
@@ -199,8 +205,30 @@ function setView(name){
 function updateGain(){
   if(view!=='orbit')return;
   for(const button of document.querySelectorAll('[data-gain]'))button.setAttribute('aria-pressed',String(+button.dataset.gain===gain));
-  $('scale-note').textContent=gain===1?'True scale · distances in the displayed arc are proportional':
-    'Earth–Moon separation magnified '+gain+'× · Earth’s path to scale';
+  const fromSun=lesson.orbitView==='sun';
+  const description=fromSun?'The camera follows Earth from the Sun. The Moon passes from side to side, alternately crossing in front of and behind Earth.':
+    'Blue is Earth’s track. White is the Moon’s. At true scale the tracks almost overlap. Magnify the Moon’s displacement to see it sway.';
+  $('orbit-explainer').textContent=description;
+  $('orbit-gains').hidden=fromSun;
+  for(const b of $('guide').querySelectorAll('[data-orbit-view]'))b.setAttribute('aria-pressed',String(b.dataset.orbitView===lesson.orbitView));
+  $('scale-note').textContent=fromSun?'Moon’s sideways motion enlarged':gain===1?'True orbital scale · body markers enlarged':'Moon offset enlarged '+gain+'× · Earth orbit to scale';
+  updateOrbitClock();
+}
+function updateOrbitClock(){
+  const day=lesson.orbitDay%ORBIT_YEAR;
+  $('orbit-scrub').value=day;
+  $('orbit-progress').textContent='Day '+(Math.floor(day)+1)+' · repeating year';
+}
+function toggleOrbit(){
+  if(orbitPlaying){stop();return;}
+  orbitPlaying=true;
+  $('orbit-play').textContent='Pause year';
+  let last=performance.now();
+  orbitTimer=setInterval(()=>{
+    const now=performance.now();
+    lesson.orbitDay+=(now-last)*ORBIT_YEAR/36000;
+    last=now;updateOrbitClock();draw();
+  },50);
 }
 
 function updateClock(){
@@ -225,6 +253,7 @@ const rangeLabel=t=>view==='eclipse'?short(t).slice(5)+' '+clock(t):short(t);
 function clearCheckpoint(){
   checkpoint=null;
   $('phase-popup').hidden=true;
+  solstice=null;$('solstice-panel').hidden=true;
 }
 function showCheckpoint(quarter){
   checkpoint=quarter;
@@ -256,7 +285,7 @@ function setSky(open){
 }
 
 function draw(){
-  render($('space'),view,camera,frame,trajectory,gain,lesson);
+  render($('space'),view,camera,frame,gain,lesson);
   if(!$('sky').hidden&&frame?.sunSky){
     skyChart($('sky-canvas'),sky,(selected-dayStart)/HOUR,frame);
     skyDome($('sky-dome'),sky,frame);
@@ -277,7 +306,7 @@ function showSky(){
 
 function request(){
   revision+=1;
-  if(!api)return;
+  if(!api||view==='eclipse'||view==='orbit')return;
   pending=true;
   if(!busy)void refresh();
 }
@@ -289,6 +318,7 @@ async function refresh(){
     const r=revision;
     const time=selected, currentView=view, open=!$('sky').hidden, start=dayStart;
     const lat=latitude,lon=longitude;
+    if(currentView==='orbit'||currentView==='eclipse')continue;
     try{
       const result=await api('frame',[iso(time),lat,lon,open]);
       if(open){
@@ -298,19 +328,9 @@ async function refresh(){
           skyKey=key;
         }
       }
-      if(currentView==='orbit'){
-        const key=short(anchor);
-        if(key!==trajectoryKey){
-          trajectory=await api('trajectory',[key+'T12:00:00Z']);
-          trajectoryKey=key;
-        }
-      }
       if(currentView==='seasons'){
         const year=new Date(time).getUTCFullYear();
         if(year!==seasonKey){lesson.season=await api('season',[year]);seasonKey=year;}
-      }
-      if(currentView==='eclipse'){
-        lesson.sestri=lesson.eclipse==='sestri'&&short(time)==='2026-08-12'?await api('sestri_sky',[iso(time)]):null;
       }
       if(r===revision){
         frame=result;
@@ -326,6 +346,8 @@ async function refresh(){
 
 function stop(){
   if(timer)clearInterval(timer);
+  if(orbitTimer)clearInterval(orbitTimer);
+  orbitPlaying=false;$('orbit-play').textContent='Play year';
   playToken++;
   playing=false;$('play').textContent='▶';$('play').setAttribute('aria-label','Play');$('play').setAttribute('aria-pressed','false');
 }
@@ -338,8 +360,16 @@ async function togglePlay(){
   let next=null;
   try{
     if(view==='phases')next=await api('quarter',[iso(selected+1000)]);
+    if(view==='seasons'){
+      const year=new Date(selected).getUTCFullYear();
+      for(const y of [year,year+1]){
+        const data=await api('season',[y]);
+        const key=['jun_solstice','dec_solstice'].find(k=>Date.parse(data.markers[k].date)>selected+1000);
+        if(key){next={date:data.markers[key].date,solstice:key};break;}
+      }
+    }
   }catch(error){
-    if(token===playToken){stop();status('Could not find the next phase','error');}
+    if(token===playToken){stop();status('Could not find the next checkpoint','error');}
     return;
   }
   if(token!==playToken)return;
@@ -351,28 +381,21 @@ async function togglePlay(){
     const candidate=selected+(now-last)*DAY*Number($('speed').value)/1000;
     last=now;
     if(candidate>=pauseAt&&pauseAt<=MAX){
-      stop();showCheckpoint(next.quarter);changeDate(pauseAt,false,false,true);return;
+      stop();
+      if(next.solstice)showSolstice(next.solstice);
+      else showCheckpoint(next.quarter);
+      changeDate(pauseAt,false,false,true);return;
     }
     changeDate(candidate);
     if(selected>=MAX)stop();
   },75);
 }
 
-async function eclipseExample(mode){
-  if(!api)return;
-  stop();
-  lesson.eclipse=mode;
-  if(mode==='sestri'){
-    sestriEvent??=await api('sestri_event',[]);
-    if(view!=='eclipse'||lesson.eclipse!==mode)return;
-    eventLabel='Sestri Levante · August 12, 2026';
-    changeDate(Date.parse(sestriEvent.begin),true);
-  }else{
-    const solar=mode==='solar';
-    const date=Date.parse(solar?'2024-04-08T18:17:19Z':'2025-03-14T06:58:42Z');
-    eventLabel=solar?'April 8, 2024 · Total solar eclipse':'March 14, 2025 · Total lunar eclipse';
-    changeDate(date,true);
-  }
+function showSolstice(key){
+  solstice=key;
+  $('solstice-panel').hidden=false;
+  $('solstice-title').textContent=seasonNames[key];
+  $('solstice-resume').focus({preventScroll:true});
 }
 
 async function jump(kind){
@@ -384,10 +407,6 @@ async function jump(kind){
     if(view!==source)return;
     if(!hit.date||Date.parse(hit.date)>MAX){
       status('Next event is beyond 2100','error');return;
-    }
-    if(hit.kind){
-      lesson.eclipse=hit.family;
-      eventLabel=hit.kind+' '+hit.family+' eclipse · '+short(Date.parse(hit.date))+' '+clock(hit.date)+' UTC';
     }
     if(view==='phases'){
       showCheckpoint(Number(kind)/90);
@@ -414,24 +433,30 @@ $('guide').addEventListener('click',event=>{
   const b=event.target.closest('button');
   if(!b)return;
   if(b.dataset.event)void jump(b.dataset.event);
-  if(b.dataset.eclipse)void eclipseExample(b.dataset.eclipse).catch(error=>{console.error(error);status('Eclipse example unavailable','error');});
-  if(b.dataset.local&&sestriEvent){
-    stop();const start=Date.parse(sestriEvent.begin);
-    changeDate(Date.parse(sestriEvent[b.dataset.local]));
-    anchor=start;updateClock();
-  }
+  if(b.dataset.eclipse){lesson.eclipse=b.dataset.eclipse;updateGuide();draw();}
+  if(b.dataset.orbitView){lesson.orbitView=b.dataset.orbitView;updateGain();draw();}
   if(b.dataset.season&&lesson.season?.markers[b.dataset.season]){
-    stop();changeDate(Date.parse(lesson.season.markers[b.dataset.season].date),true);
+    stop();clearCheckpoint();
+    const key=b.dataset.season, isSolstice=key.endsWith('solstice');
+    if(isSolstice)showSolstice(key);
+    changeDate(Date.parse(lesson.season.markers[key].date),true,false,isSolstice);
   }
   if(b.dataset.gain){gain=+b.dataset.gain;updateGain();draw();}
 });
 $('play').onclick=togglePlay;
+$('orbit-play').onclick=toggleOrbit;
+$('orbit-scrub').oninput=()=>{
+  stop();
+  lesson.orbitDay=Math.floor(lesson.orbitDay/ORBIT_YEAR)*ORBIT_YEAR+Math.min(ORBIT_YEAR-.001,Number($('orbit-scrub').value));
+  updateOrbitClock();draw();
+};
+$('solstice-resume').onclick=()=>{$('play').focus({preventScroll:true});void togglePlay();};
 $('resume').onclick=()=>{$('play').focus({preventScroll:true});void togglePlay();};
 $('forward').onclick=()=>{stop();changeDate(selected+(view==='eclipse'?5*60000:DAY));};
-$('today').onclick=()=>{stop();eventLabel='';changeDate(Date.now(),true);};
+$('today').onclick=()=>{stop();changeDate(Date.now(),true);};
 $('date').onchange=()=>{
   const time=Date.parse($('date').value+'Z');
-  if($('date').validity.valid&&Number.isFinite(time)){stop();eventLabel='';changeDate(time,true);}
+  if($('date').validity.valid&&Number.isFinite(time)){stop();changeDate(time,true);}
   else status('Choose a date from 1900 to 2100','error');
 };
 $('scrub').oninput=()=>{stop();changeDate(anchor+Number($('scrub').value)*timelineStep());};
