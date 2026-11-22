@@ -68,3 +68,5 @@ nav{flex-wrap:wrap}
 #pause-slot[data-kind=season]{height:260px}
 @media(max-width:530px){#pause-slot[data-kind=season]{height:290px}}
 .lab-card input[type=number]{width:6.3em}
+
+.season-beams{height:124px;background:#091221;border-radius:8px;margin:8px 0}

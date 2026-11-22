@@ -98,7 +98,7 @@ const guides={
         <div class="metric"><strong id="axis-tilt">—</strong>Axis tilt from orbit normal</div>
         <div class="metric"><strong id="solar-distance">—</strong>Distance from Sun</div>
       </div>
-      <p id="season-light" class="callout"></p>
+      <p id="season-light" class="callout"></p><canvas id="season-beams" class="season-beams" aria-label="Equal-width sunlight beams and their footprints at 45 degrees north and south."></canvas>
       <div class="day-bars"><label>45° N <span id="day-n"></span><meter id="north-meter" min="0" max="24"></meter></label>
         <label>45° S <span id="day-s"></span><meter id="south-meter" min="0" max="24"></meter></label></div>
     </div>
@@ -164,6 +164,7 @@ function updateGuide(){
       $(id+'-meter').value=frame.daylight[i];
       $(i===0?'day-n':'day-s').textContent=frame.daylight[i].toFixed(1)+' hours of daylight';
     }
+    solsticeDiagram($('season-beams'),dec);
     if(solstice){
       const north=solstice==='jun_solstice';
       $('solstice-title').textContent=seasonNames[solstice];
@@ -218,7 +219,15 @@ function setView(name){
   $('toggle-sky')?.addEventListener('click',()=>setSky($('sky').hidden));
   updateGain();
   setCamera(name==='orbit'?'top':'tilt');
+  if(name==='seasons')orientSeasons();
   anchor=selected;updateClock();updateGuide();request();
+}
+
+function orientSeasons(){
+  if(!lesson.season)return;
+  const [x,y]=lesson.season.markers.jun_solstice.earth;
+  camera.az=Math.atan2(y,x)+Math.PI/2;
+  camera.el=.72;draw();
 }
 
 function updateGain(){
@@ -349,7 +358,11 @@ async function refresh(){
       }
       if(currentView==='seasons'){
         const year=new Date(time).getUTCFullYear();
-        if(year!==seasonKey){lesson.season=await api('season',[year]);seasonKey=year;}
+        if(year!==seasonKey){
+          const first=seasonKey===undefined;
+          lesson.season=await api('season',[year]);seasonKey=year;
+          if(first&&view==='seasons')orientSeasons();
+        }
       }
       if(r===revision){
         frame=result;

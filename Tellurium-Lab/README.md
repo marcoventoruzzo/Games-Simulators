@@ -10,9 +10,11 @@ Explore the changing geometry of the Sun, Earth, and Moon from 1900 through 2100
 - **Seasons** shows the Earth's orbit and axis, with actual equinox, solstice, perihelion, and aphelion times. Playback pauses at each solstice and compares midday ray footprints and geometric daylight at 45° north and south.
 
 - **Analemma** plots the Sun at local mean solar noon using the ephemeris, with year and location controls.
-- **Sky & sunlight** compares Rayleigh scattering across wavelengths, the direct sunset spectrum, diffraction, and the white Sun seen from space.
-- **Star lives** animates schematic tracks across the Hertzsprung–Russell diagram.
+- **Light and colors** compares Rayleigh scattering across wavelengths, the direct sunset spectrum, diffraction, and the white Sun seen from space.
+- **Star lives** uses a static Hertzsprung–Russell diagram with familiar stars and a guide to their evolution.
 - **Doppler shift**, **Dark night sky**, and **Distance & spectra** cover radial velocity, Olbers’ paradox, parallax, and stellar spectroscopy.
+
+- **Speed of light** compares photons and massive particles using the energy–momentum relation and calculates light travel times. [NIST vacuum value](https://physics.nist.gov/cgi-bin/cuu/Value?c).
 
 Further reading: [NASA’s analemma example](https://science.nasa.gov/image-article/apod-2002-july-9-analemma/), [NASA on light scattering](https://science.nasa.gov/earth/earth-observatory/crepuscular-rays-and-light-scattering-150090/), [NASA on Olbers’ paradox](https://science.nasa.gov/solar-system/skywatching/night-sky-network/looking-beyond-the-stars-septembers-night-sky-notes/), and [ESA’s Gaia instruments](https://www.esa.int/nb/articles/about-us/directorates/science/gaia/science-instruments).
 

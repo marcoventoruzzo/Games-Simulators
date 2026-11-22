@@ -271,18 +271,31 @@ function seasonScene(ctx,w,h,camera,zoom,frame,season){
   const origin=project([0,0,0]), earth=project(frame.earth);
   const sunRadius=Math.min(38,w*.077), er=Math.min(26,w*.058);
   globe(ctx,origin,sunRadius,'sun',camera,[1,0,0]);
-  line(ctx,[origin,earth],'#ffd09085',1,[5,4]);
+  const sunward=unit(sub(origin,earth).slice(0,2));
+  const off=[-sunward[1],sunward[0]];
+  const span=Math.hypot(...sub(origin,earth).slice(0,2));
+  if(span>sunRadius+er+12){
+    for(const k of [-.9,-.6,-.3,0,.3,.6,.9]){
+      const offset=mul(off,k*er);
+      const surface=add(add(earth,offset),mul(sunward,er*Math.sqrt(1-k*k)));
+      const start=add(add(origin,offset),mul(sunward,-Math.sqrt(Math.max(0,sunRadius**2-(k*er)**2))-3));
+      arrow(ctx,start,surface,'#ffca80aa');
+    }
+  }
   for(const [key,name] of Object.entries(seasonLabels)){
     const p=project(season.markers[key].earth);
     ctx.fillStyle='#a7cfff';ctx.beginPath();ctx.arc(...p,4,0,TAU);ctx.fill();
-    const side=p[0]>w*.5;
-    label(ctx,name,[clamp(p[0]+(side?8:-8),94,w-94),p[1]-15],color.earth);
-    const v=season.markers[key].earth;
-    line(ctx,[project(add(v,mul(frame.pole,-.12))),project(add(v,mul(frame.pole,.12)))],'#b9f6e0b5',1.4);
+    const solstice=key.endsWith('solstice');
+    label(ctx,name,[clamp(p[0],65,w-65),p[1]+(solstice?-47:21)],solstice?color.sun:color.earth);
   }
-  const a=project(add(frame.earth,mul(frame.pole,-.26))),b=project(add(frame.earth,mul(frame.pole,.26)));
+  // Project the same spatial axis everywhere. Lengthen the drawing of the axis for legibility.
+  const shift=[dot(frame.pole,camera[0]),-dot(frame.pole,camera[1])];
+  const a=add(earth,mul(shift,-er*2.7)),b=add(earth,mul(shift,er*2.7));
   staticEarth(ctx,earth,er);
-  arrow(ctx,a,b,'#a5f0d3');label(ctx,'N',[b[0]+9,b[1]-5],'#a5f0d3');
+  arrow(ctx,a,b,'#b5ffdf');label(ctx,'N',[b[0]+10,b[1]-4],'#b5ffdf');
+  // Equal-width parallel beams produce shorter footprints on more directly lit ground.
+  if(Math.abs(frame.declination)>1)label(ctx,frame.declination>0?'More direct at 45° N':'More direct at 45° S',
+    [w*.5,h*.93],color.sun);
   label(ctx,'EARTH',[earth[0],earth[1]+er+13],color.earth);
   label(ctx,'SUN',[origin[0],origin[1]+sunRadius+13],color.sun);
 }
