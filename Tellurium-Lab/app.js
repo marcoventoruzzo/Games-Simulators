@@ -17,9 +17,9 @@ const configs={
 };
 let activeLab=null, disposeLab=null, ephemeris;
 let api, view='phases', selected=clamp(Date.now()), anchor=selected, dayStart=Math.floor(selected/DAY)*DAY;
-let camera={az:presets.tilt[0],el:presets.tilt[1],zoom:1},frame,sky;
+let camera={az:presets.top[0],el:presets.top[1],zoom:1},frame,sky;
 let latitude=45.4642,longitude=9.19,gain=20,playing=false,timer,busy=false,pending=false,revision=0;
-let skyKey='', drag=null, playToken=0, checkpoint=null, seasonKey, solstice=null;
+let skyKey='', drag=null, playToken=0, checkpoint=null, seasonKey, seasonCheckpoint=null;
 let orbitTimer, orbitPlaying=false;
 const ORBIT_YEAR=365.256;
 const lesson={eclipse:'solar-miss',season:null,orbitDay:0,orbitView:'top'};
@@ -36,6 +36,7 @@ const quarterNotes=[
   'The lit half faces Earth. The visible disk is almost fully illuminated.',
   'We see about half the visible disk lit again. This time the lit portion is shrinking.'
 ];
+const seasonalCheckpoints=['mar_equinox','jun_solstice','sep_equinox','dec_solstice'];
 const seasonNames={mar_equinox:'March equinox',jun_solstice:'June solstice',sep_equinox:'September equinox',
   dec_solstice:'December solstice',perihelion:'Perihelion',aphelion:'Aphelion'};
 
@@ -165,10 +166,12 @@ function updateGuide(){
       $(i===0?'day-n':'day-s').textContent=frame.daylight[i].toFixed(1)+' hours of daylight';
     }
     solsticeDiagram($('season-beams'),dec);
-    if(solstice){
-      const north=solstice==='jun_solstice';
-      $('solstice-title').textContent=seasonNames[solstice];
-      $('solstice-note').textContent='Identically spaced rays hit a shorter stretch of ground at 45° '+(north?'N':'S')+
+    if(seasonCheckpoint){
+      const north=seasonCheckpoint==='jun_solstice';
+      $('solstice-title').textContent=seasonNames[seasonCheckpoint];
+      $('solstice-note').textContent=seasonCheckpoint.endsWith('equinox')
+        ? 'The Sun is overhead at the equator. At 45° N and 45° S, midday rays strike at the same angle and daylight lasts about 12 hours.'
+        : 'Identically spaced rays hit a shorter stretch of ground at 45° '+(north?'N':'S')+
         '. The higher midday Sun concentrates the same beam, and daylight lasts longer there.';
       solsticeDiagram($('solstice-rays'),dec);
     }
@@ -177,6 +180,11 @@ function updateGuide(){
 
 function setCamera(name){
   [camera.az,camera.el]=presets[name];camera.zoom=1;
+  if(view==='seasons'){
+    alignSeasonAzimuth();
+    // A small elevation keeps the two equinoxes apart in the near-edge view.
+    if(name==='edge')camera.el=.24;
+  }
   for(const key of Object.keys(presets))$(key).setAttribute('aria-pressed',String(key===name));
   draw();
 }
@@ -218,16 +226,14 @@ function setView(name){
   $('guide').innerHTML=guides[name];
   $('toggle-sky')?.addEventListener('click',()=>setSky($('sky').hidden));
   updateGain();
-  setCamera(name==='orbit'?'top':'tilt');
-  if(name==='seasons')orientSeasons();
+  setCamera(name==='phases'||name==='orbit'?'top':'tilt');
   anchor=selected;updateClock();updateGuide();request();
 }
 
-function orientSeasons(){
+function alignSeasonAzimuth(){
   if(!lesson.season)return;
   const [x,y]=lesson.season.markers.jun_solstice.earth;
   camera.az=Math.atan2(y,x)+Math.PI/2;
-  camera.el=.72;draw();
 }
 
 function updateGain(){
@@ -281,7 +287,7 @@ const rangeLabel=t=>view==='eclipse'?short(t).slice(5)+' '+clock(t):short(t);
 function clearCheckpoint(){
   checkpoint=null;
   $('phase-popup').hidden=true;
-  solstice=null;$('solstice-panel').hidden=true;
+  seasonCheckpoint=null;$('solstice-panel').hidden=true;
 }
 function showCheckpoint(quarter){
   checkpoint=quarter;
@@ -359,9 +365,8 @@ async function refresh(){
       if(currentView==='seasons'){
         const year=new Date(time).getUTCFullYear();
         if(year!==seasonKey){
-          const first=seasonKey===undefined;
           lesson.season=await api('season',[year]);seasonKey=year;
-          if(first&&view==='seasons')orientSeasons();
+          if(view==='seasons'&&Object.keys(presets).some(key=>$(key).getAttribute('aria-pressed')==='true'))alignSeasonAzimuth();
         }
       }
       if(r===revision){
@@ -396,8 +401,8 @@ async function togglePlay(){
       const year=new Date(selected).getUTCFullYear();
       for(const y of [year,year+1]){
         const data=await api('season',[y]);
-        const key=['jun_solstice','dec_solstice'].find(k=>Date.parse(data.markers[k].date)>selected+1000);
-        if(key){next={date:data.markers[key].date,solstice:key};break;}
+        const key=seasonalCheckpoints.find(k=>Date.parse(data.markers[k].date)>selected+1000);
+        if(key){next={date:data.markers[key].date,seasonCheckpoint:key};break;}
       }
     }
   }catch(error){
@@ -414,7 +419,7 @@ async function togglePlay(){
     last=now;
     if(candidate>=pauseAt&&pauseAt<=MAX){
       stop();
-      if(next.solstice)showSolstice(next.solstice);
+      if(next.seasonCheckpoint)showSeasonCheckpoint(next.seasonCheckpoint);
       else showCheckpoint(next.quarter);
       changeDate(pauseAt,false,false,true);return;
     }
@@ -423,8 +428,8 @@ async function togglePlay(){
   },75);
 }
 
-function showSolstice(key){
-  solstice=key;
+function showSeasonCheckpoint(key){
+  seasonCheckpoint=key;
   $('solstice-panel').hidden=false;
   $('solstice-title').textContent=seasonNames[key];
   $('solstice-resume').focus({preventScroll:true});
@@ -470,9 +475,9 @@ $('guide').addEventListener('click',event=>{
   if(b.dataset.orbitView){lesson.orbitView=b.dataset.orbitView;updateGain();draw();}
   if(b.dataset.season&&lesson.season?.markers[b.dataset.season]){
     stop();clearCheckpoint();
-    const key=b.dataset.season, isSolstice=key.endsWith('solstice');
-    if(isSolstice)showSolstice(key);
-    changeDate(Date.parse(lesson.season.markers[key].date),true,false,isSolstice);
+    const key=b.dataset.season, isCheckpoint=seasonalCheckpoints.includes(key);
+    if(isCheckpoint)showSeasonCheckpoint(key);
+    changeDate(Date.parse(lesson.season.markers[key].date),true,false,isCheckpoint);
   }
   if(b.dataset.gain){gain=+b.dataset.gain;updateGain();draw();}
 });

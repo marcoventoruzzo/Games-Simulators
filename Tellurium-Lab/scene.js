@@ -269,7 +269,9 @@ function seasonScene(ctx,w,h,camera,zoom,frame,season){
   const project=v=>[w*.5+scale*dot(v,camera[0]),h*.49-scale*dot(v,camera[1])];
   line(ctx,season.orbit.map(project),'#81a5d1a6',1.3);
   const origin=project([0,0,0]), earth=project(frame.earth);
-  const sunRadius=Math.min(38,w*.077), er=Math.min(26,w*.058);
+  const orbitHeight=scale*Math.abs(camera[2][2]);
+  const sunRadius=Math.min(38,w*.077,Math.max(8,orbitHeight*.46));
+  const er=Math.min(26,w*.058,Math.max(7,orbitHeight*.35));
   globe(ctx,origin,sunRadius,'sun',camera,[1,0,0]);
   const sunward=unit(sub(origin,earth).slice(0,2));
   const off=[-sunward[1],sunward[0]];
@@ -286,13 +288,17 @@ function seasonScene(ctx,w,h,camera,zoom,frame,season){
     const p=project(season.markers[key].earth);
     ctx.fillStyle='#a7cfff';ctx.beginPath();ctx.arc(...p,4,0,TAU);ctx.fill();
     const solstice=key.endsWith('solstice');
-    label(ctx,name,[clamp(p[0],65,w-65),p[1]+(solstice?-47:21)],solstice?color.sun:color.earth);
+    label(ctx,name,[clamp(p[0],65,w-65),p[1]+(solstice?-47:Math.sign(p[1]-origin[1])*23)],solstice?color.sun:color.earth);
   }
   // Project the same spatial axis everywhere. Lengthen the drawing of the axis for legibility.
   const shift=[dot(frame.pole,camera[0]),-dot(frame.pole,camera[1])];
   const a=add(earth,mul(shift,-er*2.7)),b=add(earth,mul(shift,er*2.7));
   staticEarth(ctx,earth,er);
-  arrow(ctx,a,b,'#b5ffdf');label(ctx,'N',[b[0]+10,b[1]-4],'#b5ffdf');
+  line(ctx,[a,b],'#081321',5);
+  line(ctx,[a,b],'#b5ffdf',2.6);
+  arrow(ctx,earth,b,'#b5ffdf');
+  label(ctx,'N',[b[0]+10,b[1]-4],'#b5ffdf');
+  label(ctx,'S',[a[0]-10,a[1]+4],'#b5ffdf');
   // Equal-width parallel beams produce shorter footprints on more directly lit ground.
   if(Math.abs(frame.declination)>1)label(ctx,frame.declination>0?'More direct at 45° N':'More direct at 45° S',
     [w*.5,h*.93],color.sun);
