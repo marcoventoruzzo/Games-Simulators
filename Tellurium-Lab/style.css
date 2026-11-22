@@ -25,8 +25,15 @@ input[type=range]{width:100%;margin:11px 0 0;accent-color:var(--blue);cursor:poi
 #sky-dome{height:240px;border:1px solid var(--line);border-radius:10px}
 @media(max-width:580px){.sky-visuals{grid-template-columns:1fr}#sky-dome{height:205px}}
 
-.phase-popup{position:absolute;top:13px;right:13px;display:flex;align-items:center;gap:12px;max-width:min(365px,calc(100% - 26px));padding:12px 14px;background:#142441f7;border:1px solid #97bafe;border-radius:13px;box-shadow:0 12px 36px #0009;z-index:2}
-.phase-popup h3,.phase-popup p{margin:0 0 5px}.phase-popup p:not(.eyebrow){font-size:.82rem;color:var(--faint)}
-.phase-popup .disc{width:58px;height:58px}.phase-popup button{font-size:.78rem}
+/* Keep the checkpoint in the transport layout so it cannot cover the diagram. */
+.phase-checkpoint{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;margin:0 0 12px;padding:10px 12px;background:#172842;border:1px solid #6085bb;border-radius:12px}
+.checkpoint-disc{display:grid;justify-items:center;gap:3px;color:var(--gold);font:.67rem var(--mono)}
+.checkpoint-disc .disc{width:52px;height:52px}
+.checkpoint-copy h3,.checkpoint-copy p{margin:0}
+.checkpoint-copy h3{font-size:1.04rem}
+.checkpoint-copy p:not(.eyebrow){font-size:.84rem;color:var(--faint)}
+#resume{background:var(--blue);border-color:var(--blue);color:#0b1421;font-size:.8rem;font-weight:700}
+#resume:hover{background:#b3d2ff}
+@media(max-width:530px){.phase-checkpoint{grid-template-columns:auto minmax(0,1fr);gap:7px 10px}.phase-checkpoint #resume{grid-column:2;justify-self:start}}
 .day-bars{display:grid;gap:6px}.day-bars label{display:grid;grid-template-columns:42px 1fr;align-items:center;font-size:.77rem;color:var(--faint)}
 .day-bars meter{width:100%;grid-column:1/-1;accent-color:var(--gold)}

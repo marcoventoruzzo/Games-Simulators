@@ -1,4 +1,4 @@
-import {loadTextures,render,phaseDisc,skyChart,skyDome} from './scene.js';
+import {loadTextures,render,phaseDisc,skyChart,skyDome,dot,unit} from './scene.js';
 
 const $=id=>document.getElementById(id);
 const DAY=86400000,HOUR=DAY/24,MIN=Date.UTC(1900,0,1),MAX=Date.UTC(2101,0,1)-60000;
@@ -68,6 +68,7 @@ const guides={
     </div>
     <div class="guide-card"><h3>Jump to a phase</h3><p>Find the next occurrence after the selected instant.</p>
       <div class="actions"><button data-event="0">New Moon</button><button data-event="90">First Quarter</button><button data-event="180">Full Moon</button><button data-event="270">Last Quarter</button></div>
+      <details><summary>Longitude gap and elongation</summary><p>The phase clock measures how far east the Moon is from the Sun in ecliptic longitude. Elongation is their actual separation in Earth’s sky. The Moon’s tilted orbit makes the two angles differ.</p><div class="metrics"><div class="metric"><strong id="longitude-gap">—</strong>Eastward longitude gap</div><div class="metric"><strong id="elongation">—</strong>Sky separation</div></div></details>
       <details open><summary>Why the shape changes</summary><p>Follow the gold arrows from the Sun. They always light the half of the Moon facing the Sun. The dotted blue line marks Earth’s view. Compare the orbit with the disk above to see how much of the lit half faces us.</p></details>
     </div>`,
   eclipse:`
@@ -128,11 +129,17 @@ function updateGuide(){
     const principal=p%2===0&&Math.abs(((angle-p*45+540)%360)-180)<1;
     const i=principal?p:((Math.floor(angle/90)*2+1)%8);
     $('phase-name').textContent=names[i];
+    $('longitude-gap').textContent=angle.toFixed(1)+'°';
+    const cosine=-dot(unit(frame.earth),unit(frame.moon));
+    $('elongation').textContent=(180/Math.PI*Math.acos(Math.max(-1,Math.min(1,cosine)))).toFixed(1)+'°';
     $('lit').textContent=(100*frame.lit).toFixed(1)+'%';
     $('distance').textContent=Math.round(frame.distance).toLocaleString('en-US')+' km';
     $('phase-hint').textContent=hints[i];
     phaseDisc($('phase-disc'),frame,!$('sky').hidden&&!!frame.skyView);
-    if(checkpoint)phaseDisc($('checkpoint-disc'),frame);
+    if(checkpoint!==null){
+      $('checkpoint-percent').textContent=(100*frame.lit).toFixed(1)+'% lit';
+      phaseDisc($('checkpoint-disc'),frame,!$('sky').hidden&&!!frame.skyView);
+    }
   } else if(view==='eclipse'){
     const local=lesson.eclipse==='sestri';
     $('sestri-controls').hidden=!local;
@@ -223,6 +230,7 @@ function showCheckpoint(quarter){
   checkpoint=quarter;
   $('checkpoint-title').textContent=names[quarter*2];
   $('checkpoint-note').textContent=quarterNotes[quarter];
+  $('checkpoint-percent').textContent='';
   $('phase-popup').hidden=false;
   $('resume').focus({preventScroll:true});
 }

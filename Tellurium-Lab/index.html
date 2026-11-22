@@ -33,15 +33,22 @@
     </div>
     <div class="canvas-wrap">
       <canvas id="space" tabindex="0" aria-label="Interactive orbital model. Drag or use arrow keys to rotate. Use plus or minus to zoom."></canvas>
-      <section id="phase-popup" class="phase-popup" hidden aria-label="Lunar phase checkpoint">
-        <canvas id="checkpoint-disc" class="disc" aria-hidden="true"></canvas>
-        <div><p class="eyebrow">PLAYBACK PAUSED</p><h3 id="checkpoint-title"></h3>
-        <p id="checkpoint-note"></p><button id="resume">Resume playback</button></div>
-      </section>
       <span id="scale-note">Body sizes and distances enlarged for clarity</span>
       <div class="zoom" id="zoom-controls"><button id="minus" aria-label="Zoom out">−</button><button id="plus" aria-label="Zoom in">+</button></div>
     </div>
     <div class="timeline">
+      <section id="phase-popup" class="phase-checkpoint" hidden aria-labelledby="checkpoint-title">
+        <div class="checkpoint-disc">
+          <canvas id="checkpoint-disc" class="disc" aria-label="Moon as seen from Earth"></canvas>
+          <span id="checkpoint-percent"></span>
+        </div>
+        <div class="checkpoint-copy" aria-live="polite">
+          <p class="eyebrow">PAUSED AT A LUNAR PHASE</p>
+          <h3 id="checkpoint-title"></h3>
+          <p id="checkpoint-note"></p>
+        </div>
+        <button id="resume">Resume playback</button>
+      </section>
       <div class="transport">
         <button id="play" aria-label="Play">▶</button>
         <button id="forward" aria-label="Step forward">Step</button>
