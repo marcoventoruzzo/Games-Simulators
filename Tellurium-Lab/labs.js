@@ -313,11 +313,11 @@ const solarTrack=[
   [4.57,5772,0,'The Sun today','The surface is about 5,770 K. Deep inside, the much hotter core still has enough hydrogen to fuse.'],
   [10.5,5500,.38,'Hydrogen runs low in the core','The graph measures surface temperature. As hydrogen runs out in the core, the core contracts and heats up. Hydrogen begins fusing in a shell around it, and the outer layers expand. Along this part of the track, the surface cools.'],
   [12.1,3100,3.0,'Red giant','Notice the move up and right. Each square meter of the cooler surface gives off less light, but the surface is so much bigger that the whole star shines more brightly.'],
-  [12.2,4800,1.8,'Helium fusion in the core'],
-  [12.35,2850,3.65,'Late giant and envelope loss'],
+  [12.2,4800,1.8,'Helium fusion in the core','The core becomes hot enough to fuse helium into carbon and oxygen. The outer layers shrink compared with the red giant stage. On the diagram, the surface gets warmer while the whole star gives off less light, so the dot moves down and left.'],
+  [12.35,2850,3.65,'A second giant phase','After the core uses up its helium, fusion continues in shells around a carbon–oxygen core. The outer layers swell again and cool at the surface. The Sun grows brighter overall and loses much of its outer gas in strong winds. The dot moves up and right.'],
   [12.36,90000,3.20,'Hot exposed core and planetary nebula','The Sun sheds its outer layers and exposes its hot core. The track moves far to the left as the visible surface gets hotter.'],
   [12.45,37000,-1.15,'White dwarf','The remnant is still hot, but it is very small. It gives off little light overall and will gradually cool.'],
-  [20,6500,-3.75,'White dwarf cooling']
+  [20,6500,-3.75,'White dwarf cooling','The white dwarf shines using heat left over from its earlier life. With no sustained fusion to replenish that heat, its surface cools and it fades. The dot moves down and right. Cooling continues beyond this model.']
 ];
 function arrowPath(c,points,color){
   path(c,points,color,1.5);
@@ -412,7 +412,7 @@ function starLab(root){
       if(stage[4]||index===solarTrack.length-1){
         go.click();
         showMilestone(stage);
-        if(stage[4])go.textContent='Continue the Sun’s life';
+        go.textContent=index===solarTrack.length-1?'Replay the Sun’s life':'Continue the Sun’s life';
       }
     }
   });
