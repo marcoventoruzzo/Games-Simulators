@@ -62,7 +62,7 @@ export function mountZodiacSky(canvas,controls){
       }
     }
     for(const [name,p] of Object.entries(birth.sky)){
-      if(showHidden||!daytime||['Sun','Moon','ASC'].includes(name))mark(name,p,name==='Sun'||name==='ASC'?gold:'#ecf6ff',name==='Sun'?7:name==='Moon'?4:2.8);
+      if(showHidden||!daytime||['Sun','Moon','ASC','DSC'].includes(name))mark(name,p,['Sun','ASC','DSC'].includes(name)?gold:'#ecf6ff',name==='Sun'?7:name==='Moon'?4:2.8);
     }
     controls.querySelector('output').textContent='Facing '+directions[Math.round(((az%360+360)%360)/45)%8]+' · elevation '+Math.round(el)+'°'+(daytime?' · daylight':' · nighttime');
   }

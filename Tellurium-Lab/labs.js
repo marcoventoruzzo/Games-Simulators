@@ -458,15 +458,41 @@ function dopplerLab(root){
 }
 
 function darkLab(root){
-  root.innerHTML=card('Why is the night sky dark?',
+  root.innerHTML='<div class="lab-stack">'+card('Why is the night sky dark?',
     '<p>This is <strong>Olbers’ paradox</strong>. In an eternal, static universe filled uniformly with shining stars, each layer contains more stars in proportion to distance squared. Each one is fainter by the same factor. Add layers and the sky would eventually be covered by stellar surfaces.</p>'+
     '<div class="lab-actions">'+select('universe','Universe', [['real','Finite history · expanding'],['static','Eternal · static']])+'</div>'+
     slider('shells','Maximum lookback time',1,18,18)+out('dark-read')+'<div class="lab-rows">'+canvas('shellview','Illustrative contributions to sky brightness from equally thick layers')+
     canvas('nightfield','Illustrative sky becoming brighter as more shells of stars contribute')+'</div>'+
     '<p>Light travels at a finite speed. Very distant light takes longer to arrive. There was an era before the first stars, so the observed sky cannot accumulate light from infinitely many layers of shining stars. Expansion also redshifts light and reduces energy arrival rates.</p>'+
     '<p><strong>When Earth formed, about 4.54 billion years ago:</strong> stars already existed in the Milky Way. The sky would have had different stars and patterns. Looking back farther from Earth today shows earlier light from distant sources. It does not tell us how many stars could have been seen from the young Earth.</p>'+
-    '<details><summary>What our eyes miss</summary><p>Most stars are too distant and faint to see individually with the unaided eye. The sky still glows at wavelengths we cannot see. The early universe fills the sky with the cosmic microwave background. The bars compare shell contributions before stellar disks overlap. In the eternal model the final view illustrates the limiting case, in which every sight line ends on a stellar surface. Disk sizes and the number of layers needed to fill the view are illustrative. The last slider position switches to the infinite-time limit in the eternal model.</p></details>');
+    '<details><summary>What our eyes miss</summary><p>Most stars are too distant and faint to see individually with the unaided eye. The sky still glows at wavelengths we cannot see. The early universe fills the sky with the cosmic microwave background. The bars compare shell contributions before stellar disks overlap. In the eternal model the final view illustrates the limiting case, in which every sight line ends on a stellar surface. Disk sizes and the number of layers needed to fill the view are illustrative. The last slider position switches to the infinite-time limit in the eternal model.</p></details>')+
+    card('The sky seen from Earth',
+    '<p>On a clear, moonless night far from city lights, a person may see <strong>roughly 3,000 individual stars</strong> above the horizon. Most are part of the Milky Way. The faint Milky Way band is light from many stars your eye cannot pick out separately.</p>'+
+    '<div class="lab-actions">'+select('observer-era','Observe from Earth',[['today','Today'],['past','2 billion years ago'],['future','2 billion years from now']])+'</div>'+
+    out('observer-read')+canvas('observer-field','Illustrative unaided-eye night sky from Earth at the selected epoch')+
+    '<p>Stars are born, die, and move. As the Sun travels through the Milky Way, different stars come close enough for us to see. An observer 2 billion years ago would have seen a different star field. In the future, some familiar stars will vanish from view and others will appear. The overall count could go up or down.</p>'+
+    '<p>These sketches use similar densities to make the changing patterns easy to compare. They are not maps or estimates of ancient or future star counts. The future view assumes an observer with a clear view of space.</p>')+'</div>';
   return attach(root,()=>{
+    const era=$(root,'observer-era').value;
+    const sketches={past:[17,'2 billion years ago · illustrative sky'],today:[89,'Today · illustrative dark-sky view'],future:[201,'2 billion years from now · illustrative sky']};
+    const [seed,caption]=sketches[era];
+    $(root,'observer-read').textContent=caption;
+    const observer=canvasContext($(root,'observer-field'));
+    const rand=i=>Math.abs(Math.sin(i*127.1)*43758.5453)%1;
+    if(observer){
+      const {ctx:c,w,h}=observer;
+      background(c,w,h,'#030714','#131f38');
+      for(let i=1;i<=500;i++){
+        const k=seed*509+i,x=rand(k)*w;
+        const y=i>165?h*(.72-x/w*.44+(rand(k+301)+rand(k+707)-1)*.29):rand(k+301)*h*.89;
+        const radius=i>165?.2+rand(k+990)*.42:.4+rand(k+990)**3*1.6;
+        dot(c,x,y,radius,i>165?'#aebee837':i%13===0?'#ffdeb4':'#ecf3ffbd');
+      }
+      const horizon=Array.from({length:41},(_,i)=>[w*i/40,h*(.93+.018*Math.sin(i*.61)+.011*Math.cos(i*1.8))]);
+      c.beginPath();c.moveTo(...horizon[0]);
+      for(const point of horizon.slice(1))c.lineTo(...point);
+      c.lineTo(w,h);c.lineTo(0,h);c.closePath();c.fillStyle='#02050e';c.fill();
+    }
     const n=+$(root,'shells').value, real=$(root,'universe').value==='real';
     const env=canvasContext($(root,'shellview'));if(!env)return;
     const {ctx:c,w,h}=env;background(c,w,h);
@@ -478,7 +504,6 @@ function darkLab(root){
     if(field){
       const {ctx:sc,w:sw,h:sh}=field;
       background(sc,sw,sh,'#040815','#091425');
-      const rand=i=>Math.abs(Math.sin(i*127.1)*43758.5453)%1;
       if(real){
         for(let i=1;i<=n*15;i++)dot(sc,rand(i)*sw,rand(i+301)*sh,.5+rand(i+990),'#fdf2dbac');
       }else{
@@ -500,9 +525,11 @@ function darkLab(root){
     line(c,[38,base],[w-24,base],muted);
     values.forEach((v,i)=>{c.fillStyle=real?cyan:gold;c.fillRect(40+bw*i,base-v*h*.53,Math.max(2,bw-4),v*h*.53);});
     text(c,'Contribution by layer',38,24,ink,'left');
-    text(c,'Now',39,h-17,muted,'left');
+    text(c,real?'Observer today':'Now',39,h-17,real?cyan:muted,'left');
     text(c,'13.8 billion years back',w-25,h-17,muted,'right');
     if(real){
+      line(c,[39,65],[39,base],cyan);
+      dot(c,39,base,3.5,cyan);
       const x=39+4.54/13.8*18*bw;
       line(c,[x,42],[x,base],'#ffcf8c');
       text(c,'Earth forms',x+5,56,gold,'left');

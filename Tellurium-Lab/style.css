@@ -127,3 +127,7 @@ nav{flex-wrap:wrap}
 @media(max-width:710px){.astro-views{grid-template-columns:1fr}}
 
 .kepler-graph{display:block;max-width:730px;width:100%;margin:10px auto;background:#090f1b;border-radius:8px}.kepler-graph text{fill:var(--ink);font:11px system-ui}
+.astro-lab canvas[data-precession]{height:clamp(215px,31vw,310px)}
+.astro-glyph{font-size:1.1em;color:var(--blue);font-variant-emoji:text}
+.astro-meanings h3{margin-top:1.35rem}
+.astro-meanings dl{grid-template-columns:minmax(6.5em,auto) 1fr}

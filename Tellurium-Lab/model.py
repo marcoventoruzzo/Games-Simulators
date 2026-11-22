@@ -251,6 +251,23 @@ def request_json(payload):
     return json.dumps(OPERATIONS[name](*args), allow_nan=False)
 
 
+ZODIAC_STARS = {
+    'Taurus': [(4.5987, 16.5093), (5.4382, 28.6075), (5.6274, 21.1425), (3.7914, 24.1051)],
+    'Gemini': [(7.7553, 28.0262), (7.5767, 31.8883), (6.6285, 16.3993), (6.3827, 22.5136)],
+    'Leo': [(10.1395, 11.9672), (10.3329, 19.8415), (11.8177, 14.5721)],
+    'Virgo': [(13.4199, -11.1613), (12.6943, -1.4495), (13.0363, 10.9591)],
+    'Libra': [(14.8479, -16.0418), (15.2834, -9.3830), (15.5921, -14.7895)],
+    'Scorpius': [(16.4901, -26.4320), (16.0056, -22.6217), (17.5601, -37.1038)],
+    'Sagittarius': [(18.4029, -34.3846), (18.9211, -26.2967), (19.0435, -29.8801)],
+    'Capricornus': [(20.3502, -14.7814), (21.7840, -16.1273)],
+    'Aquarius': [(22.0964, -.3199), (21.5260, -5.5712)],
+    'Pisces': [(2.0341, 2.7638), (23.2861, 3.2823)],
+    'Aries': [(2.1196, 23.4624), (1.9107, 20.8080)],
+    'Cancer': [(8.9748, 11.8577), (8.7448, 18.1543)],
+    'Ophiuchus': [(17.5822, 12.5600), (17.1730, -15.7249)]
+}
+
+
 def zodiac_chart(date, latitude, longitude):
     """Geocentric apparent zodiac positions and the geometric eastern horizon."""
     from math import atan2
@@ -284,34 +301,69 @@ def zodiac_chart(date, latitude, longitude):
         points.append([name, ae.Ecliptic(v).elon, ae.Constellation(eq.ra, eq.dec).name])
         sky[name] = horizontal(getattr(ae.Body, name), t, observer)
     sky['ASC'] = ecliptic_point(ascendant)
+    sky['DSC'] = ecliptic_point(ascendant + 180)
     # Approximate mean lunar perigee, referred to the equinox of date.
     centuries = t.tt / 36525
     perigee = (83.3532465 + 4069.0137287*centuries - .01032*centuries**2
                - centuries**3/80053 + centuries**4/18999000)
     lilith = (perigee + 180) % 360
-    stars = {
-        'Taurus': [(4.5987, 16.5093), (5.4382, 28.6075), (5.6274, 21.1425), (3.7914, 24.1051)],
-        'Gemini': [(7.7553, 28.0262), (7.5767, 31.8883), (6.6285, 16.3993), (6.3827, 22.5136)],
-        'Leo': [(10.1395, 11.9672), (10.3329, 19.8415), (11.8177, 14.5721)],
-        'Virgo': [(13.4199, -11.1613), (12.6943, -1.4495), (13.0363, 10.9591)],
-        'Libra': [(14.8479, -16.0418), (15.2834, -9.3830), (15.5921, -14.7895)],
-        'Scorpius': [(16.4901, -26.4320), (16.0056, -22.6217), (17.5601, -37.1038)],
-        'Sagittarius': [(18.4029, -34.3846), (18.9211, -26.2967), (19.0435, -29.8801)],
-        'Capricornus': [(20.3502, -14.7814), (21.7840, -16.1273)],
-        'Aquarius': [(22.0964, -.3199), (21.5260, -5.5712)],
-        'Pisces': [(2.0341, 2.7638), (23.2861, 3.2823)],
-        'Aries': [(2.1196, 23.4624), (1.9107, 20.8080)],
-        'Cancer': [(8.9748, 11.8577), (8.7448, 18.1543)],
-        'Ophiuchus': [(17.5822, 12.5600), (17.1730, -15.7249)]
-    }
     date_rotation = ae.Rotation_EQJ_EQD(t)
     def star_point(ra, dec):
         v = ae.VectorFromSphere(ae.Spherical(dec, ra*15, 1), t)
         return horizon(ae.EquatorFromVector(ae.RotateVector(date_rotation, v)))
     constellations = {name: [star_point(ra, dec) for ra, dec in group]
-                      for name, group in stars.items()}
+                      for name, group in ZODIAC_STARS.items()}
     return dict(ascendant=ascendant, points=points, sky=sky, lilith=lilith,
                 constellations=constellations, ecliptic=[ecliptic_point(a) for a in range(0,361,4)])
 
 
 OPERATIONS['zodiac'] = zodiac_chart
+
+
+@lru_cache(maxsize=8)
+def precession_sky(date):
+    """Compare the Sun at the same seasonal longitude in a fixed stellar frame."""
+    today = ae.Time(date)
+    year, month, day, *_ = today.Calendar()
+    earlier = ae.SearchSunLongitude(ae.SunPosition(today).elon,
+                                   ae.Time.Make(year-3000, month, day, 0, 0, 0).AddDays(-25), 50)
+    if earlier is None:
+        raise ValueError("Could not match the seasonal longitude")
+
+    def sun_position(time):
+        vector = ae.GeoVector(SUN, time, True)
+        eq = ae.EquatorFromVector(vector)
+        ecl = ae.SphereFromVector(ae.RotateVector(ECLIPTIC, vector))
+        return dict(lon=ecl.lon, lat=ecl.lat, region=ae.Constellation(eq.ra, eq.dec).name,
+                    year=time.Calendar()[0])
+
+    modern, ancient = sun_position(today), sun_position(earlier)
+    center = modern['lon']
+
+    def relative(lon):
+        return (lon - center + 180) % 360 - 180
+
+    bands = []
+    rotation = ae.Rotation_ECL_EQJ()
+    for offset in range(-60, 60):
+        direction = ae.VectorFromSphere(ae.Spherical(0, (center+offset+.5) % 360, 1), today)
+        eq = ae.EquatorFromVector(ae.RotateVector(rotation, direction))
+        name = ae.Constellation(eq.ra, eq.dec).name
+        if bands and bands[-1][0] == name:
+            bands[-1][2] = offset+1
+        else:
+            bands.append([name, offset, offset+1])
+
+    stars = {}
+    for name, group in ZODIAC_STARS.items():
+        stars[name] = []
+        for ra, dec in group:
+            vector = ae.VectorFromSphere(ae.Spherical(dec, ra*15, 1), today)
+            ecl = ae.SphereFromVector(ae.RotateVector(ECLIPTIC, vector))
+            stars[name].append([relative(ecl.lon), ecl.lat])
+    ancient['offset'] = relative(ancient['lon'])
+    modern['offset'] = 0
+    return dict(modern=modern, ancient=ancient, bands=bands, stars=stars)
+
+
+OPERATIONS['precession'] = precession_sky
