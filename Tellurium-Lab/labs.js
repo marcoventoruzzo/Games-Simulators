@@ -1,3 +1,4 @@
+import {mountBlackHole} from './black-hole.js';
 import {mountBirth} from './birth.js';
 import {canvasContext} from './scene.js';
 
@@ -628,7 +629,7 @@ function lightSpeedLab(root){
   });
 }
 
-const labs={analemma,sky:skyLab,stars:starLab,birth:mountBirth,doppler:dopplerLab,dark:darkLab,measure:measureLab,'light-speed':lightSpeedLab};
+const labs={analemma,sky:skyLab,stars:starLab,birth:mountBirth,doppler:dopplerLab,dark:darkLab,measure:measureLab,'light-speed':lightSpeedLab,'black-hole':mountBlackHole};
 export function mountLab(root,key,api,year){
   return labs[key](root,api,year);
 }

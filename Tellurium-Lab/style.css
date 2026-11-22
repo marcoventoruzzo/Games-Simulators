@@ -81,3 +81,7 @@ nav{flex-wrap:wrap}
 .birth-card [data-stage]{margin-top:12px;color:var(--gold)}
 .birth-card [data-description]{min-height:4.7em}
 .birth-card .birth-note{border-top:1px solid var(--line);padding-top:12px}
+.black-hole-card figure{margin:10px 0}
+.black-hole-card img{display:block;width:100%;border-radius:10px;background:#05070d}
+.black-hole-card figcaption{margin:8px 0;color:var(--faint);font-size:.8rem}
+.black-hole-card [data-feedback]{min-height:3em;color:var(--gold)}

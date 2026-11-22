@@ -48,14 +48,15 @@ function label(c,text,x,y,color='#e5efff'){
   c.fillStyle=color;c.font='600 12px system-ui';c.textAlign='center';c.fillText(text,x,y);
 }
 function particles(c,x,y,r,flatten,phase,count,enriched){
+  const opacity=c.globalAlpha;
   for(let i=0;i<count;i++){
     const angle=random(i+200)*TAU+phase*(.24+random(i+50)*.6);
     const d=(.12+.88*Math.sqrt(random(i)))*r;
-    c.globalAlpha=.25+random(i+120)*.67;
+    c.globalAlpha=opacity*(.25+random(i+120)*.67);
     disk(c,x+Math.cos(angle)*d,y+Math.sin(angle)*d*flatten,.6+random(i+500)*2.5,
       enriched?palette[i%palette.length]:'#9fbee4');
   }
-  c.globalAlpha=1;
+  c.globalAlpha=opacity;
 }
 function ring(c,x,y,r,flatten,color){
   c.strokeStyle=color;c.lineWidth=1;c.beginPath();c.ellipse(x,y,r,r*flatten,0,0,TAU);c.stroke();
@@ -83,13 +84,22 @@ function planets(c,x,y,r,outer,phase){
   });
 }
 
-function drawScene(canvas,mode,phase,caption){
+function drawScene(canvas,scene,next,position){
   const env=canvasContext(canvas);if(!env)return;
   const {ctx:c,w,h}=env, x=w*.5,y=h*.43,r=Math.min(w,h)*.33;
   const bg=c.createLinearGradient(0,0,w,h);
   bg.addColorStop(0,'#182442');bg.addColorStop(1,'#070c17');
   c.fillStyle=bg;c.fillRect(0,0,w,h);
   for(let i=0;i<85;i++)disk(c,random(i+800)*w,random(i+420)*h,.35+random(i)*.9,'#a9badc67');
+  const blend=next?Math.max(0,(position-.72)/.28):0;
+  const fade=blend*blend*(3-2*blend);
+  drawStage(c,w,h,scene,position,1-fade);
+  if(fade>0)drawStage(c,w,h,next,0,fade);
+}
+function drawStage(c,w,h,[,,mode,caption],phase,opacity){
+  const x=w*.5,y=h*.43,r=Math.min(w,h)*.33;
+  if(opacity<=0)return;
+  c.save();c.globalAlpha=opacity;
   if(mode==='cloud'||mode==='enriched'||mode==='disk'){
     const size=r*(mode==='disk'?1.48:1.4-.32*phase);
     glow(c,x,y,size,'#d5bafe','#9c6bcd44','#49418c00');
@@ -143,7 +153,8 @@ function drawScene(canvas,mode,phase,caption){
       disk(c,ex+Math.cos(phase*.8)*r*.91,y-Math.sin(phase*.8)*r*.31,earth*.26,'#d3d4dd');
     }
   }
-  label(c,caption,x,h*.93,'#ffcf9a');
+  if(opacity>=.5)label(c,caption,x,h*.93,'#ffcf9a');
+  c.restore();
 }
 
 const enrichmentNote = `<details class="birth-note"><summary>Where do gold, uranium, and the other elements come from?</summary>
@@ -161,7 +172,7 @@ export function mountBirth(root){
       <label>Timeline <input type="range" min="0" max="${episode.scenes.length*100-1}" value="0" step="1"></label>
       <h3 data-stage></h3><p data-description></p>
       ${i===1?enrichmentNote:i===2?'<p><a href="https://science.nasa.gov/solar-system/solar-system-facts/">NASA · Solar System formation</a> · <a href="https://science.nasa.gov/moon/formation/">NASA · Moon formation</a></p>':''}
-    </article>`).join('')+'</div>';
+    </article>`).join('')+fusionMarkup+'</div>';
 
   const cleanup=[...root.querySelectorAll('.birth-card')].map((card,i)=>{
     const timeline=card.querySelector('input'), play=card.querySelector('[data-play]');
@@ -170,12 +181,12 @@ export function mountBirth(root){
     let frame=0, prior=-1, start=0, from=0;
     function render(){
       const value=Number(timeline.value), index=Math.floor(value/100);
-      const [name,note,mode,caption]=episodes[i].scenes[index];
+      const scene=episodes[i].scenes[index], [name,note]=scene;
       if(prior!==index){
         heading.textContent=name;description.textContent=note;
         timeline.setAttribute('aria-valuetext',name);prior=index;
       }
-      drawScene(canvas,mode,(value%100)/100,caption);
+      drawScene(canvas,scene,episodes[i].scenes[index+1],(value%100)/100);
     }
     function stop(){
       cancelAnimationFrame(frame);frame=0;play.textContent='Play';
@@ -197,5 +208,73 @@ export function mountBirth(root){
     const resize=new ResizeObserver(render);resize.observe(canvas);render();
     return ()=>{stop();resize.disconnect();};
   });
+  cleanup.push(mountFusion(root));
   return ()=>cleanup.forEach(dispose=>dispose());
+}
+
+const reactions=[
+  ['Hydrogen → helium',[1,1,1,1],2,2,'Four hydrogen nuclei ultimately yield one helium-4 nucleus. In this chain, two protons become neutrons. Positrons and neutrinos also emerge. Energy is carried away by the products and radiation.'],
+  ['Helium → carbon',[4,4,4],6,6,'Three helium-4 nuclei can make carbon-12. The first two briefly form beryllium-8. If a third joins before it falls apart, the carbon nucleus can release energy and survive.'],
+  ['Carbon + helium → oxygen',[12,4],8,8,'Carbon-12 can capture a helium-4 nucleus and emit a gamma ray, forming oxygen-16. Adding protons changes the element. Oxygen has eight, while carbon has six.']
+];
+const fusionMarkup=`<article class="lab-card birth-card" data-fusion>
+<h2>Zoom into nuclear fusion</h2>
+<p>Inside a star, heat strips electrons from atoms. Fusion joins or rearranges the bare nuclei. The number of protons tells you which element you have.</p>
+<div class="lab-actions"><label>Reaction <select>${reactions.map(([name],i)=>`<option value="${i}">${name}</option>`).join('')}</select></label><button type="button">Play reaction</button></div>
+<canvas aria-label="Diagram of nuclei joining, with different colors for protons and neutrons"></canvas>
+<label>Reaction progress <input type="range" min="0" max="100" value="0"></label>
+<p><strong style="color:#ffa38e">● Proton</strong> · <strong style="color:#9bcaff">● Neutron</strong> · gold ripple represents energy released</p>
+<p data-reaction></p><p>These are net reactions. The drawings enlarge nuclei and compress several steps. A product nucleus can weigh slightly less than the starting particles. The difference appears as released energy.</p>
+</article>`;
+
+function mountFusion(root){
+  const section=root.querySelector('[data-fusion]');
+  const select=section.querySelector('select'), input=section.querySelector('input');
+  const button=section.querySelector('button'), canvas=section.querySelector('canvas');
+  let frame=0;
+  function nucleus(c,x,y,protons,neutrons,r){
+    const n=protons+neutrons;
+    for(let i=0;i<n;i++){
+      const a=i*2.39996,d=Math.sqrt(i)*r*.9;
+      disk(c,x+Math.cos(a)*d,y+Math.sin(a)*d,r,i%2===0?'#ffa38e':'#9bcaff');
+    }
+  }
+  function draw(){
+    const [name,inputs,p,n,note]=reactions[Number(select.value)];
+    section.querySelector('[data-reaction]').textContent=note;
+    const env=canvasContext(canvas);if(!env)return;
+    const {ctx:c,w,h}=env,x=w/2,y=h*.49,r=Math.min(9,w*.022);
+    const t=Number(input.value)/100, merging=Math.min(1,t/.62);
+    c.fillStyle='#0d172a';c.fillRect(0,0,w,h);
+    label(c,name,x,28);
+    if(t<.62){
+      inputs.forEach((mass,i)=>{
+        const a=i*TAU/inputs.length+.26,d=w*.31*(1-merging)+r*2;
+        nucleus(c,x+Math.cos(a)*d,y+Math.sin(a)*d*.56,mass===1?1:mass/2,mass===1?0:mass/2,r);
+      });
+      label(c,'Starting nuclei',x,h-24);
+    }else{
+      const wave=(t-.62)/.38;
+      ring(c,x,y,20+wave*Math.min(w,h)*.25,1,'rgba(255,206,132,'+(.9-.8*wave)+')');
+      nucleus(c,x,y,p,n,r);
+      label(c,'Product: '+p+' protons + '+n+' neutrons',x,h-24);
+    }
+  }
+  function stop(){cancelAnimationFrame(frame);frame=0;button.textContent='Play reaction';}
+  button.onclick=()=>{
+    if(frame){stop();return;}
+    input.value=0;
+    const start=performance.now();
+    button.textContent='Pause';
+    function animate(now){
+      input.value=Math.min(100,Math.floor((now-start)/33));
+      draw();
+      if(Number(input.value)<100)frame=requestAnimationFrame(animate);else stop();
+    }
+    frame=requestAnimationFrame(animate);
+  };
+  select.onchange=()=>{stop();input.value=0;draw();};
+  input.oninput=()=>{stop();draw();};
+  const observer=new ResizeObserver(draw);observer.observe(canvas);draw();
+  return ()=>{stop();observer.disconnect();};
 }
