@@ -168,11 +168,11 @@ export function mountAstrology(root,api){
     <div class="lab-rows"><canvas aria-label="Natal chart with current planetary transit positions overlaid"></canvas><div data-transits></div></div>
     <p data-aspect></p>
     <p>Astrologers also read angular relationships called <strong>aspects</strong>. Here we check for a conjunction (0°), square (90°), or opposition (180°) within 5° of the natal Sun. These are conventions of interpretation.</p></article>
-    <article class="lab-card"><h2>Why signs and constellations drift apart</h2>
-    <p>Imagine you could see the stars behind the Sun in broad daylight. Switch between today and the same point in the seasonal year 3,000 years ago. The star background stays in place so you can see where the Sun appears from Earth.</p>
-    <div class="lab-actions" data-era><button type="button" data-period="modern" aria-pressed="true">Today</button><button type="button" data-period="ancient" aria-pressed="false">3,000 years ago</button></div>
+    <article class="lab-card"><h2>Why signs do not really match what goes on in the sky today</h2>
+    <p>Imagine you could see the stars behind the Sun in broad daylight. Start with October 4 in the modern sky. Then switch to the same point in the seasonal year around 400 BCE, when Babylonian astronomers established a zodiac of twelve equal signs. The same stars stay in place so you can compare the Sun’s position.</p>
+    <div class="lab-actions" data-era><button type="button" data-period="modern" aria-pressed="true">October 4 · modern sky</button><button type="button" data-period="ancient" aria-pressed="false">Around 400 BCE</button></div>
     <p data-drift role="status">Loading the star background…</p><canvas data-precession aria-label="Earth-based view of the Sun against the same background constellations in two eras"></canvas>
-    <p>Earth’s axis slowly wobbles. That shifts the March equinox against the stars. Tropical signs move with that equinox, while the astronomical constellations are fixed regions on the star map. Over 3,000 years, the difference is about 42°, more than one 30° sign.</p>
+    <p>October 4 still falls in the tropical sign of Libra. The modern Sun is actually in front of the stars of Virgo. Around 400 BCE, at the same point in the seasonal year, the Sun was in the part of the sky now mapped as Libra. Earth’s axis slowly changes direction, shifting the March equinox against the stars. The tropical zodiac follows that equinox, so its signs shift relative to the constellations.</p>
     <p>The strip follows the ecliptic. Its lower bands mark the constellation boundaries along that track. The dots show selected stars, and the Sun’s disk is enlarged.</p></article>
     </div>`;
   const q=s=>root.querySelector(s), [,natalCanvas,transitCanvas,precession]=root.querySelectorAll('canvas');
@@ -217,13 +217,12 @@ export function mountAstrology(root,api){
     c.fillStyle='#fff0b6';c.beginPath();c.arc(sx,sy,8,0,Math.PI*2);c.fill();
     c.fillStyle=gold;c.font='600 13px system-ui';c.textAlign='center';c.fillText('Sun',sx,sy-20);
   }
-  const localDate=new Intl.DateTimeFormat('en-US',{dateStyle:'long'});
-  const nowLocal=new Date();
-  const dateForSky=new Date(Date.UTC(nowLocal.getFullYear(),nowLocal.getMonth(),nowLocal.getDate(),12)).toISOString();
+  const year=new Date().getFullYear();
+  const dateForSky=new Date(Date.UTC(year,9,4,12)).toISOString();
   function showEra(){
     if(!comparison)return;
     const sun=comparison[period];
-    const when=period==='modern'?localDate.format(nowLocal):Math.abs(sun.year-1)+' BCE · same point in the seasonal year';
+    const when=period==='modern'?'October 4, '+year:'Around 400 BCE · same seasonal position as October 4';
     q('[data-drift]').textContent=when+' — The Sun appears in '+sun.region+'.';
     for(const button of q('[data-era]').querySelectorAll('button'))button.setAttribute('aria-pressed',String(button.dataset.period===period));
     drawPrecession();

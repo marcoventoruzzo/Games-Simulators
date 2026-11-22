@@ -324,9 +324,10 @@ OPERATIONS['zodiac'] = zodiac_chart
 def precession_sky(date):
     """Compare the Sun at the same seasonal longitude in a fixed stellar frame."""
     today = ae.Time(date)
-    year, month, day, *_ = today.Calendar()
+    _, month, day, *_ = today.Calendar()
+    babylonian_zodiac_year = -399  # Astronomical year numbering for 400 BCE.
     earlier = ae.SearchSunLongitude(ae.SunPosition(today).elon,
-                                   ae.Time.Make(year-3000, month, day, 0, 0, 0).AddDays(-25), 50)
+                                   ae.Time.Make(babylonian_zodiac_year, month, day, 0, 0, 0).AddDays(-25), 50)
     if earlier is None:
         raise ValueError("Could not match the seasonal longitude")
 

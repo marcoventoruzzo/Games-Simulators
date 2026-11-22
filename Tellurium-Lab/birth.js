@@ -174,7 +174,7 @@ export function mountBirth(root){
       ${i===1?enrichmentNote:i===2?'<p><a href="https://science.nasa.gov/solar-system/solar-system-facts/">NASA · Solar System formation</a> · <a href="https://science.nasa.gov/moon/formation/">NASA · Moon formation</a></p>':''}
     </article>`).join('')+fusionMarkup+'</div>';
 
-  const cleanup=[...root.querySelectorAll('.birth-card')].map((card,i)=>{
+  const cleanup=[...root.querySelectorAll('.birth-card:not([data-fusion])')].map((card,i)=>{
     const timeline=card.querySelector('input'), play=card.querySelector('[data-play]');
     const heading=card.querySelector('[data-stage]'), description=card.querySelector('[data-description]');
     const canvas=card.querySelector('canvas');
@@ -236,7 +236,7 @@ function mountFusion(root){
     const n=protons+neutrons;
     for(let i=0;i<n;i++){
       const a=i*2.39996,d=Math.sqrt(i)*r*.9;
-      disk(c,x+Math.cos(a)*d,y+Math.sin(a)*d,r,i%2===0?'#ffa38e':'#9bcaff');
+      disk(c,x+Math.cos(a)*d,y+Math.sin(a)*d,r,i<protons?'#ffa38e':'#9bcaff');
     }
   }
   function draw(){
@@ -263,11 +263,11 @@ function mountFusion(root){
   function stop(){cancelAnimationFrame(frame);frame=0;button.textContent='Play reaction';}
   button.onclick=()=>{
     if(frame){stop();return;}
-    input.value=0;
-    const start=performance.now();
+    if(Number(input.value)===100)input.value=0;
+    const start=performance.now(),from=Number(input.value);
     button.textContent='Pause';
     function animate(now){
-      input.value=Math.min(100,Math.floor((now-start)/33));
+      input.value=Math.min(100,from+Math.floor((now-start)/33));
       draw();
       if(Number(input.value)<100)frame=requestAnimationFrame(animate);else stop();
     }
