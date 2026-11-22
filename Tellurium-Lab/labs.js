@@ -660,7 +660,134 @@ function lightSpeedLab(root){
   });
 }
 
-const labs={analemma,sky:skyLab,stars:starLab,birth:mountBirth,doppler:dopplerLab,dark:darkLab,measure:measureLab,'light-speed':lightSpeedLab,'black-hole':mountBlackHole,planets:mountPlanets,astrology:mountAstrology};
+function retrogradeLab(root){
+  root.innerHTML=card('Why does Jupiter seem to go backward?',
+    '<p>Imagine passing a slower runner on the inside lane. Against the distant scenery, that runner seems to slide backward even as both of you run forward. Earth does something similar when it passes Jupiter.</p>'+
+    '<div class="lab-actions"><button id="retro-play">Play</button><button id="retro-pass">Jump to the pass</button></div>'+
+    slider('retro-day','Days before or after Earth passes Jupiter',-190,190,-190)+out('retro-status')+
+    '<div class="lab-rows retro-views"><section><h3>From above the Solar System</h3>'+canvas('retro-orbits','Earth and Jupiter move in the same direction. A sightline connects Earth to Jupiter.')+
+    '</section><section><h3>From Earth, against the stars</h3>'+canvas('retro-sky','Jupiter’s apparent direction on a fixed star background, with east to the right.')+'</section></div>'+
+    '<p>Follow the gold sightline in the first picture and Jupiter’s dot in the second. The <strong>purple stretch</strong> shows where Jupiter appears to move west. The two ends of that stretch are the <strong>stationary points</strong>, where it briefly appears to stop before changing direction.</p>'+
+    '<details><summary>How did epicycles explain the reversal?</summary>'+
+    '<div class="lab-rows"><svg class="kepler-mini" viewBox="0 0 220 128" role="img" aria-label="An Earth-centered model with a small movable circle carried along a larger circle."><circle cx="84" cy="64" r="49" fill="none" stroke="#7296bf"/><circle cx="125" cy="38" r="23" fill="none" stroke="#e8b979"/><circle cx="84" cy="64" r="5" fill="#84c6ff"/><circle cx="146" cy="47" r="5" fill="#e8b979"/><text x="84" y="84">Earth</text><text x="174" y="60">Planet</text><text x="172" y="23">Epicycle</text></svg>'+
+    '<p>In the Earth-centered model associated with Ptolemy, a planet rode on a small circle called an <strong>epicycle</strong>. The center of that circle traveled along a larger circle called the <strong>deferent</strong>. Part of the small circle could make the planet seem to go backward. It was a useful way to calculate positions. Jupiter’s reversal comes from watching it from a moving Earth, as the animation shows. The same apparent reversal can be described in Earth-centered coordinates.</p></div></details>'+
+    '<p class="callout">This model uses circular orbits in one plane. The sky view shows east–west motion. Real planets can also drift north or south and trace a loop against the stars.</p>');
+  const input=$(root,'retro-day'),play=$(root,'retro-play');
+  const omega=2*Math.PI/365.256, jupiterOmega=omega/11.86, orbitRadius=5.2;
+  const position=(angle,r)=>[r*Math.cos(angle),r*Math.sin(angle)];
+  function geometry(day){
+    const earth=position(day*omega,1),jupiter=position(day*jupiterOmega,orbitRadius);
+    return {earth,jupiter,bearing:Math.atan2(jupiter[1]-earth[1],jupiter[0]-earth[0])};
+  }
+  const samples=Array.from({length:381},(_,i)=>geometry(i-190).bearing);
+  const retrograde=samples.map((bearing,i)=>i>0&&bearing<samples[i-1]);
+  const first=retrograde.indexOf(true),last=retrograde.lastIndexOf(true);
+  const low=Math.min(...samples),high=Math.max(...samples);
+  const dispose=attach(root,()=>{
+    const day=Number(input.value),index=day+190,{earth,jupiter,bearing}=geometry(day);
+    const direction=index>=first&&index<=last?'Jupiter appears to move west · retrograde':'Jupiter appears to move east · direct';
+    $(root,'retro-status').textContent=(day===0?'Earth passes Jupiter':Math.abs(day)+' days '+(day<0?'before':'after')+' the pass')+' · '+direction;
+    const orbit=canvasContext($(root,'retro-orbits'));
+    if(orbit){
+      const {ctx:c,w,h}=orbit,r=Math.min(w,h)*.38/orbitRadius,x=w/2,y=h/2;
+      background(c,w,h);
+      const map=([a,b])=>[x+a*r,y-b*r];
+      for(const [rr,color] of [[1,cyan],[orbitRadius,'#967d5d']]){
+        c.strokeStyle=color;c.lineWidth=1;c.beginPath();c.arc(x,y,rr*r,0,Math.PI*2);c.stroke();
+        const a=2.3,p=map(position(a,rr)),q=map(position(a-.25,rr));
+        line(c,q,p,color,2);
+        for(const twist of [-.65,.65]){
+          const heading=Math.atan2(p[1]-q[1],p[0]-q[0])+twist;
+          line(c,p,[p[0]-7*Math.cos(heading),p[1]-7*Math.sin(heading)],color,2);
+        }
+      }
+      const e=map(earth),j=map(jupiter);
+      line(c,e,[e[0]+Math.cos(bearing)*w,e[1]-Math.sin(bearing)*w],gold,1.5);
+      shot(c,x,y,5);dot(c,...e,5,cyan);dot(c,...j,7,gold);
+      text(c,'Earth',e[0],e[1]+(e[1]>y?20:-11),cyan);
+      text(c,'Jupiter',j[0],j[1]-12,gold);
+    }
+    const sky=canvasContext($(root,'retro-sky'));
+    if(sky){
+      const {ctx:c,w,h}=sky,y=h*.47,toX=a=>w*(.11+.78*(a-low)/(high-low));
+      background(c,w,h,'#111d36','#080c18');
+      for(let i=1;i<70;i++)dot(c,(i*137.3%100)*w/100,(i*63.7%100)*h/100,i%9===0?1.7:.8,'#dce9ff83');
+      text(c,'WEST',14,24,muted,'left');text(c,'EAST',w-14,24,muted,'right');
+      line(c,[w*.10,y],[w*.90,y],'#94a9c273',1.5);
+      const left=toX(samples[last]),right=toX(samples[first-1]);
+      line(c,[left,y],[right,y],'#bc9cff',4);
+      for(const x of [left,right])line(c,[x,y-8],[x,y+9],'#bc9cff',2);
+      text(c,'Stationary points',w/2,y+42,'#d9c5ff');
+      const bx=toX(bearing);
+      shot(c,bx,y,6);text(c,'Jupiter',bx,y-19,gold);
+      text(c,index>=first&&index<=last?'← Westward':'Eastward →',w/2,h*.78,ink);
+    }
+  });
+  let timer;
+  function stop(){clearInterval(timer);timer=null;play.textContent='Play';}
+  function setDay(day){input.value=day;input.dispatchEvent(new Event('input',{bubbles:true}));}
+  play.onclick=()=>{
+    if(timer){stop();return;}
+    if(+input.value===190)setDay(-190);
+    play.textContent='Pause';
+    timer=setInterval(()=>{setDay(+input.value+2);if(+input.value===190)stop();},55);
+  };
+  input.onpointerdown=stop;
+  $(root,'retro-pass').onclick=()=>{stop();setDay(0);};
+  return ()=>{stop();dispose();};
+}
+
+function galileoLab(root){
+  const stars=Array.from({length:92},(_,i)=>{
+    const x=15+(i*137.17)%290,y=64+Math.sin(i*2.39)*((i*43)%49)-(x-155)*.13;
+    return `<circle cx="${x}" cy="${y}" r="${i%10===0?1.7:.7}" fill="#e3eaff" opacity="${i%4*.16+.3}"/>`;
+  }).join('');
+  root.innerHTML=`<div class="lab-stack">
+    <article class="lab-card"><h2>Galileo and the Starry Messenger</h2>
+    <p>In 1609 Galileo built and improved telescopes after hearing about a Dutch spyglass. He turned them on the sky. In March 1610 he published <cite>Sidereus Nuncius</cite> in Venice, describing what he saw and what he inferred from it.</p>
+    <div class="galileo-plates">
+      <section><h3>Mountains on the Moon</h3>
+        <svg viewBox="0 0 320 145" role="img" aria-label="A half-lit Moon with a jagged boundary and bright peaks on its dark side">
+          <defs><clipPath id="galileo-moon"><circle cx="160" cy="68" r="57"/></clipPath></defs>
+          <image href="assets/moon.webp" x="45" y="3" width="230" height="130" preserveAspectRatio="xMidYMid slice" clip-path="url(#galileo-moon)"/>
+          <path d="M160 11 Q98 75 160 125 A57 57 0 0 0 160 11Z" fill="#080c16" opacity=".84"/>
+          <path d="M160 12 A57 57 0 1 0 160 125" fill="none" stroke="#cab991" opacity=".5"/>
+          <g fill="#ffdb9b"><circle cx="153" cy="38" r="2"/><circle cx="140" cy="65" r="2"/><circle cx="147" cy="91" r="2"/></g>
+          <path d="M140 65 L100 42 H36" fill="none" stroke="#e5b88a"/><text x="34" y="34">Sunlit peaks</text>
+        </svg>
+        <p>Galileo saw bright specks on the dark side near the day–night boundary. Mountain peaks catch sunlight before the valleys below, just as on Earth at sunrise. Shadows and bright peaks pointed to a rough lunar surface.</p>
+        <p>He also explained <strong>earthshine</strong>: sunlight bouncing off Earth faintly lights the Moon’s night side.</p>
+      </section>
+      <section><h3>Four moons around Jupiter</h3>
+        <svg viewBox="0 0 320 145" role="img" aria-label="Three schematic observations show four dots changing sides relative to Jupiter">
+          ${[[84,119,180,232],[97,131,141,217],[63,174,201,244]].map((dots,i)=>`<text x="12" y="${33+i*42}">Night ${i+1}</text><circle cx="158" cy="${29+i*42}" r="7" fill="#f0bc80"/>${dots.map(x=>`<circle cx="${x}" cy="${29+i*42}" r="2.5" fill="#9cd3ff"/>`).join('')}`).join('')}
+        </svg>
+        <p>On successive nights, points of light changed sides but stayed close to Jupiter. Galileo concluded that they orbited Jupiter. We now call them Io, Europa, Ganymede, and Callisto. At least one planet other than Earth could have moons.</p>
+      </section>
+      <section><h3>The Milky Way is full of stars</h3>
+        <svg viewBox="0 0 320 145" role="img" aria-label="A faint diagonal strip of the Milky Way resolved into many points of starlight">
+          <path d="M5 98 Q160 75 315 36" stroke="#5c7197" opacity=".22" stroke-width="53" fill="none"/>
+          ${stars}
+        </svg>
+        <p>The unaided eye sees a pale band. Through a telescope Galileo resolved many individual stars. He also drew groups of stars in the Pleiades and in Orion that were too faint to see unaided.</p>
+      </section>
+    </div>
+    <p>Illustrations are teaching diagrams. See the <a href="https://library.si.edu/digital-library/book/sidereusnuncius00gali">1610 edition at the Smithsonian</a> and <a href="https://digital.archives.caltech.edu/collections/Images/RB-GG1610a-4/">Galileo’s lunar plates at Caltech</a>.</p>
+    <p>Jupiter’s moons fit naturally with Copernicus’s moving Earth, and they also fit Tycho Brahe’s model with a stationary Earth. Galileo’s later observations of the phases of Venus ruled out the classic Ptolemaic arrangement of Venus. Those observations came after this book.</p>
+    </article>
+    <article class="lab-card"><h2>The sky was already changing</h2>
+    <p>In Aristotelian cosmology, the realm beyond the Moon was supposed to be unchanging and incorruptible. Then observers saw bright new points among the familiar stars.</p>
+    <div class="galileo-timeline">
+      <section><h3>1572 · Tycho’s new star</h3><p>A new light appeared in Cassiopeia. Tycho Brahe looked for parallax, the change in its position that would give away a nearby object. He found no measurable shift and placed it beyond the Moon.</p></section>
+      <section><h3>1604 · Kepler’s new star</h3><p>Another bright point appeared in Ophiuchus. Johannes Kepler studied it, and Galileo gave public lectures about it in Padua. Today we know both events were supernovae, explosions of stars.</p></section>
+      <section><h3>1610 · Galileo publishes</h3><p>The new stars had already challenged the idea that the heavens never changed. Galileo’s telescope added evidence from the Moon’s landscape and Jupiter’s moving satellites.</p></section>
+    </div>
+    <p>Sources <a href="https://science.nasa.gov/image-article/apod-1999-may-30-tycho-brahe-measures-the-sky/">NASA on Tycho</a> and <a href="https://brunelleschi.imss.fi.it/itinerari/itinerario/CronologiaGalileo.html">Museo Galileo’s chronology</a>.</p>
+    </article></div>`;
+  return ()=>{};
+}
+
+const labs={analemma,sky:skyLab,stars:starLab,birth:mountBirth,doppler:dopplerLab,dark:darkLab,measure:measureLab,'light-speed':lightSpeedLab,'black-hole':mountBlackHole,planets:mountPlanets,retrograde:retrogradeLab,galileo:galileoLab,astrology:mountAstrology};
 export function mountLab(root,key,api,year){
   return labs[key](root,api,year);
 }

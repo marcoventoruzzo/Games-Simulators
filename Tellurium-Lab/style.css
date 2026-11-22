@@ -137,3 +137,10 @@ nav{flex-wrap:wrap}
 .kepler-mini{display:block;width:100%;max-width:320px;margin:auto;background:#090f1b;border-radius:8px}
 .kepler-mini text{fill:#dbe7f7;font:11px system-ui;text-anchor:middle}
 .oort-note{margin:12px 0}
+.retro-views{align-items:start}
+.retro-views canvas{height:clamp(230px,32vw,340px)}
+.galileo-plates,.galileo-timeline{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,215px),1fr));gap:14px}
+.galileo-plates section,.galileo-timeline section{padding:14px;border:1px solid var(--line);border-radius:12px;background:#101b2e}
+.galileo-plates h3,.galileo-timeline h3{margin:0 0 10px}
+.galileo-plates svg{display:block;width:100%;background:#080e1c;border-radius:8px}
+.galileo-plates svg text{fill:#d8e7ff;font:11px system-ui}
