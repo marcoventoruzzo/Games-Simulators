@@ -131,3 +131,14 @@ nav{flex-wrap:wrap}
 .astro-glyph{font-size:1.1em;color:var(--blue);font-variant-emoji:text}
 .astro-meanings h3{margin-top:1.35rem}
 .astro-meanings dl{grid-template-columns:minmax(6.5em,auto) 1fr}
+.astro-local-frame{margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:12px}
+.astro-local-frame figcaption{font-weight:700}
+.astro-compass{position:relative;isolation:isolate;display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:repeat(3,auto);justify-items:center;align-items:center;gap:7px;max-width:260px;margin:10px auto}
+.astro-compass::before,.astro-compass::after{content:"";position:absolute;z-index:-1;background:var(--line)}
+.astro-compass::before{inset:12px auto 12px 50%;width:1px}
+.astro-compass::after{inset:50% 12px auto;height:1px}
+.astro-compass [data-direction=Zenith]{grid-area:1/2}
+.astro-compass [data-direction=N]{grid-area:2/1}
+.astro-compass [data-direction=S]{grid-area:2/3}
+.astro-compass [data-direction=Nadir]{grid-area:3/2}
+.astro-compass-observer{grid-area:2/2;background:#172842;color:var(--blue);border-radius:999px;padding:4px 9px;font-size:.8rem}
