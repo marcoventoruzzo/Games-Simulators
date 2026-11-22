@@ -289,10 +289,13 @@ def zodiac_chart(date, latitude, longitude):
         return [h.azimuth, h.altitude]
 
     ecliptic_to_equator = ae.Rotation_ECT_EQD(t)
-    def ecliptic_point(angle):
+    def ecliptic_vector(angle):
         a = radians(angle)
         vec = ae.Vector(cos(a), sin(a), 0, t)
-        return horizon(ae.EquatorFromVector(ae.RotateVector(ecliptic_to_equator, vec)))
+        return ae.RotateVector(ecliptic_to_equator, vec)
+
+    def ecliptic_point(angle):
+        return horizon(ae.EquatorFromVector(ecliptic_vector(angle)))
 
     points = []
     for name in ('Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'):
@@ -302,6 +305,11 @@ def zodiac_chart(date, latitude, longitude):
         sky[name] = horizontal(getattr(ae.Body, name), t, observer)
     sky['ASC'] = ecliptic_point(ascendant)
     sky['DSC'] = ecliptic_point(ascendant + 180)
+    angles = []
+    to_j2000 = ae.Rotation_EQD_EQJ(t)
+    for name, lon in (('Ascendant', ascendant), ('Descendant', (ascendant + 180) % 360)):
+        eq = ae.EquatorFromVector(ae.RotateVector(to_j2000, ecliptic_vector(lon)))
+        angles.append([name, lon, ae.Constellation(eq.ra, eq.dec).name])
     # Approximate mean lunar perigee, referred to the equinox of date.
     centuries = t.tt / 36525
     perigee = (83.3532465 + 4069.0137287*centuries - .01032*centuries**2
@@ -313,7 +321,7 @@ def zodiac_chart(date, latitude, longitude):
         return horizon(ae.EquatorFromVector(ae.RotateVector(date_rotation, v)))
     constellations = {name: [star_point(ra, dec) for ra, dec in group]
                       for name, group in ZODIAC_STARS.items()}
-    return dict(ascendant=ascendant, points=points, sky=sky, lilith=lilith,
+    return dict(ascendant=ascendant, angles=angles, points=points, sky=sky, lilith=lilith,
                 constellations=constellations, ecliptic=[ecliptic_point(a) for a in range(0,361,4)])
 
 
@@ -391,3 +399,16 @@ def jupiter_retrograde():
 
 
 OPERATIONS['jupiter_retrograde'] = jupiter_retrograde
+
+
+def monthly_transits(start, end):
+    """Geocentric tropical longitudes at daily intervals, with an exclusive end."""
+    t, stop = ae.Time(start), ae.Time(end)
+    bodies = (ae.Body.Sun, ae.Body.Mercury, ae.Body.Venus, ae.Body.Mars,
+              ae.Body.Jupiter, ae.Body.Saturn, ae.Body.Uranus, ae.Body.Neptune)
+    return [[iso(sample), [[body.name, ae.Ecliptic(ae.GeoVector(body, sample, True)).elon]
+                           for body in bodies]]
+            for day in range(32) if (sample := t.AddDays(day)).ut < stop.ut - 1e-8]
+
+
+OPERATIONS['monthly_transits'] = monthly_transits

@@ -61,6 +61,73 @@ const houseMeanings=[
  'One-to-one relationships','Shared resources, intimacy, and loss','Travel, higher learning, and beliefs',
  'Public life and vocation','Friends, communities, and shared goals','Solitude and private life'
 ];
+const signName=lon=>signs[signIndex(lon)];
+const readingDate=new Intl.DateTimeFormat('en-US',{dateStyle:'long',timeZone:'UTC'});
+const themes={Sun:'identity and purpose',Moon:'emotional needs',Mercury:'communication and decisions',
+  Venus:'affection and values',Mars:'initiative and assertiveness',Jupiter:'growth and opportunity',
+  Saturn:'responsibility and boundaries',Uranus:'change and independence',Neptune:'imagination and ideals',
+  Ascendant:'how you approach new situations'};
+const aspectTypes=[
+  [0,'conjunction','brings the two themes together'],
+  [60,'sextile','suggests an opportunity you can act on'],
+  [90,'square','suggests a tension that calls for adjustment'],
+  [120,'trine','suggests the two themes can work together easily'],
+  [180,'opposition','suggests balancing two competing needs']
+];
+
+function monthEnd(start){
+  const end=new Date(start),day=end.getUTCDate();
+  end.setUTCDate(1);
+  end.setUTCMonth(end.getUTCMonth()+1);
+  const last=new Date(end);
+  last.setUTCMonth(last.getUTCMonth()+1,0);
+  end.setUTCDate(Math.min(day,last.getUTCDate()));
+  return end;
+}
+
+function natalReading(chart,house){
+  const [,sun]=chart.points[0], [,moon]=chart.points[1];
+  const asc=chart.ascendant,dsc=wrap(asc+180);
+  const style=lon=>signMeanings[signIndex(lon)].toLowerCase();
+  return `<p>An astrologer would start with your <strong>${signName(sun)} Sun</strong> in house ${house(sun)}.
+    The Sun represents identity and purpose. In this reading, you may come into your own by being ${style(sun)}, especially in matters of ${houseMeanings[house(sun)-1].toLowerCase()}.</p>
+    <p>Your <strong>${signName(moon)} Moon</strong> adds a more private layer. The Moon describes habits and what feels safe. The sign suggests a response that is ${style(moon)}. House ${house(moon)} links that need for comfort to ${houseMeanings[house(moon)-1].toLowerCase()}.</p>
+    <p>Your <strong>${signName(asc)} Ascendant</strong> describes the impression you may give on first meeting: ${style(asc)}. The opposite point, your <strong>${signName(dsc)} Descendant</strong>, suggests you may value a partner who is ${style(dsc)}.</p>`;
+}
+
+function monthlyReading(chart,days,end,house){
+  const natal=[...chart.points.slice(0,2),['Ascendant',chart.ascendant]];
+  const best=new Map();
+  for(const [date,planets] of days)for(const [planet,lon] of planets)for(const [target,natalLon] of natal){
+    const separation=Math.abs(signed(lon-natalLon));
+    for(const [angle,aspect,meaning] of aspectTypes){
+      const orb=Math.abs(separation-angle);
+      if(orb>2)continue;
+      const key=planet+':'+target+':'+aspect;
+      if(!best.has(key)||orb<best.get(key).orb)best.set(key,{planet,target,aspect,meaning,orb,date});
+    }
+  }
+  const chosen=[];
+  for(const hit of [...best.values()].sort((a,b)=>a.orb-b.orb)){
+    if(chosen.some(item=>item.planet===hit.planet))continue;
+    chosen.push(hit);
+    if(chosen.length===3)break;
+  }
+  const sunHouses=[...new Set(days.map(([,points])=>house(points[0][1])))];
+  const houseList=sunHouses.map(n=>'house '+n+' ('+houseMeanings[n-1].toLowerCase()+')').join(' → ');
+  const hits=chosen.sort((a,b)=>a.date.localeCompare(b.date)).map(hit=>{
+    const {planet,target,aspect,meaning,date,orb}=hit;
+    return `<li><strong>${readingDate.format(Date.parse(date))} · ${planet} ${aspect} natal ${target}</strong>.
+      This ${meaning}: consider how ${themes[planet]} relates to ${themes[target]}. The closest daily sample is ${orb.toFixed(1)}° from the exact angle.</li>`;
+  });
+  return `<p>Through ${readingDate.format(+end-86400000)} UTC, inclusive by date. Your natal ${signName(natal[0][1])} Sun,
+    ${signName(natal[1][1])} Moon, and ${signName(chart.ascendant)} Ascendant are the starting points for this reading.</p>
+    <p><strong>Where your attention might go.</strong> The transiting Sun crosses ${houseList}.
+    An astrologer would use this sequence to decide which areas of life to reflect on as the month unfolds.</p>
+    ${hits.length?'<ul>'+hits.join('')+'</ul>':'<p>No sampled transit came within 2° of one of the five major aspects to these three natal points this month.</p>'}
+    <p class="fine">This lesson samples once a day at the selected UTC time and uses a 2° tolerance. It highlights up to three close contacts from the Sun and planets, excluding the fast-moving transiting Moon. The interpretations are symbolic and intended for reflection.</p>`;
+}
+
 const dateField=(id,value)=>`<input id="${id}" type="datetime-local" min="1900-01-01T00:00" max="2100-12-31T23:59" value="${value}" required>`;
 const blue='#99ceff', gold='#ffce92', faint='#b6c9e4';
 
@@ -157,17 +224,17 @@ export function mountAstrology(root,api){
     <div><h3>The sky from the ground</h3><p data-sky-time></p>
     <canvas data-ground tabindex="0" aria-label="Birth sky. Drag or use the arrow keys to look around."></canvas>
     <div class="lab-actions" data-sky-controls><button data-look="Sun">Look toward the Sun</button><button data-look="ASC">Look at the ascendant</button><button data-look="DSC">Look at the descendant</button><button data-look="Taurus">Taurus</button><button data-look="Gemini">Gemini</button><label><input type="checkbox" checked> Show hidden sky</label><output></output></div>
-    <p>The horizon separates sky from ground. The overlay reveals stars washed out by sunlight and positions below the horizon. The constellation figures connect a few bright stars. They illustrate the constellations without tracing official boundaries.</p></div>
+    <p>The horizon separates sky from ground. The overlay reveals stars washed out by sunlight and positions below the horizon. The constellation figures connect a few bright stars. They illustrate the constellations without tracing official boundaries.</p><section class="astro-reading"><h3>How an astrologist would interpret it...</h3><div data-profile></div></section></div>
     <div><h3>The same sky as a birth chart</h3><canvas data-natal-wheel aria-label="Natal chart with twelve tropical signs, twelve equal houses, and the horizon from the eastern ascendant to the western descendant. At the center, north points away from the viewer and south points toward the viewer."></canvas>
     <p><strong>Sun sign:</strong> the 30° sector of the ecliptic containing the Sun. Think of the ecliptic as the Sun’s yearly route against the stars. <strong>Ascendant:</strong> the point on that route rising on the eastern horizon. The <strong>Descendant</strong> is the opposite point, setting on the western horizon. The gold line connects those two directions. The top half shows ecliptic directions above the horizon. The bottom half shows directions below it. E and W mark the eastern and western halves of the horizon. Imagine standing at the center and facing north. The small N arrow recedes into the screen in front of you. The S arrow comes toward you, along the direction behind you. These two arrows are a compass cue. The zodiac rings still show positions along the ecliptic. The bearings below give the actual rising and setting directions.</p>
     <p><strong>Houses:</strong> twelve 30° sectors in this example, starting at the ascendant. Astrology traditionally associates them with areas of life, such as self (1), home (4), and partnerships (7). Other systems draw different boundaries.</p>
     <div data-natal></div><p>The IAU column gives the constellation on the star map. A star marker (✦) identifies constellations outside the zodiac band.</p></div></div></article>
-    <article class="lab-card"><h2>Read the sky for a chosen day</h2>
-    <label>Transit time (UTC) ${dateField('astro-day',now)}</label>
+    <article class="lab-card"><h2>Read the sky for a chosen month</h2>
+    <label>Month starts (UTC) ${dateField('astro-day',now)}</label>
     <p>The blue marks are the birth positions. Gold shows <strong>transits</strong>, the positions at the selected time, laid over the same birth houses. For example, “Saturn in Gemini” means Saturn’s ecliptic longitude is in the 60°–90° tropical sector.</p>
     <div class="lab-rows"><canvas aria-label="Natal chart with current planetary transit positions overlaid"></canvas><div data-transits></div></div>
-    <p data-aspect></p>
-    <p>Astrologers also read angular relationships called <strong>aspects</strong>. Here we check for a conjunction (0°), square (90°), or opposition (180°) within 5° of the natal Sun. These are conventions of interpretation.</p></article>
+    <section class="astro-reading"><h3 data-month-title>The monthly horoscope that an astrologer would give you for the month starting…</h3><div data-month></div>
+    <p><strong>How the reading works.</strong> Astrologers compare moving planets with the birth chart. The five major aspects are conjunction (0°), sextile (60°), square (90°), trine (120°), and opposition (180°).</p></section></article>
     <article class="lab-card"><h2>Why signs do not really match what goes on in the sky today</h2>
     <p>Imagine you could see the stars behind the Sun in broad daylight. Start with October 4 in the modern sky. Then switch to the same point in the seasonal year around 400 BCE, when Babylonian astronomers established a zodiac of twelve equal signs. The same stars stay in place so you can compare the Sun’s position.</p>
     <div class="lab-actions" data-era><button type="button" data-period="modern" aria-pressed="true">October 4 · modern sky</button><button type="button" data-period="ancient" aria-pressed="false">Around 400 BCE</button></div>
@@ -240,7 +307,7 @@ export function mountAstrology(root,api){
   function table(points,natal){
     return '<table class="astro-table"><thead><tr><th>Object</th><th>Tropical sign</th><th>House</th>'+
       (natal?'<th>IAU constellation</th>':'')+'</tr></thead><tbody>'+
-      points.map(([name,lon,constellation])=>`<tr><th>${icon(symbols[name],name)}</th><td>${icon(glyphs[signIndex(lon)],position(lon))}</td><td>${house(lon)}</td>${natal?'<td>'+icon(constellation==='—'?null:constellationGlyph(constellation),constellation)+'</td>':''}</tr>`).join('')+
+      points.map(([name,lon,constellation])=>`<tr><th>${icon(symbols[name],name)}</th><td>${icon(glyphs[signIndex(lon)],position(lon))}</td><td>${name==='Ascendant'?1:name==='Descendant'?7:house(lon)}</td>${natal?'<td>'+icon(constellation==='—'?null:constellationGlyph(constellation),constellation)+'</td>':''}</tr>`).join('')+
       '</tbody></table>';
   }
   const render=()=>{wheel(natalCanvas,current);wheel(transitCanvas,current,sky);drawPrecession();};
@@ -251,7 +318,9 @@ export function mountAstrology(root,api){
     q('[data-status]').textContent='Computing sky positions…';
     try{
       const instant=localToUTC(birth.value,timeZones[site.selectedIndex]);
-      const [a,b]=await Promise.all([api('zodiac',[instant,lat,lon]),api('zodiac',[day.value+':00Z',lat,lon])]);
+      const start=new Date(day.value+':00Z'),end=monthEnd(start);
+      const [a,b,month]=await Promise.all([api('zodiac',[instant,lat,lon]),
+        api('zodiac',[start.toISOString(),lat,lon]),api('monthly_transits',[start.toISOString(),end.toISOString()])]);
       if(closed||rev!==revision)return;
       current=a;sky=b;ground.set(a);
       const local=new Intl.DateTimeFormat('en-US',{dateStyle:'long',timeStyle:'short',timeZone:timeZones[site.selectedIndex]}).format(new Date(instant));
@@ -260,15 +329,11 @@ export function mountAstrology(root,api){
       const bearing=key=>compass(a.sky[key][0])+' '+Math.round(a.sky[key][0])+'°';
       q('[data-status]').textContent='ASC · '+position(a.ascendant)+' · '+bearing('ASC')+
         '  |  DSC · '+position(dsc)+' · '+bearing('DSC');
-      q('[data-natal]').innerHTML=table([...a.points,['Lilith',a.lilith,'—']],true);
+      q('[data-natal]').innerHTML=table([...a.points,...a.angles,['Lilith',a.lilith,'—']],true);
       q('[data-transits]').innerHTML=table(b.points,false);
-      const [,sun]=a.points[0];
-      const aspects=b.points.flatMap(([name,lon])=>{
-        const offset=Math.abs(signed(lon-sun));
-        const hit=[[0,'conjunction'],[90,'square'],[180,'opposition']].find(([angle])=>Math.abs(offset-angle)<=5);
-        return hit?[name+' · '+hit[1]+' ('+offset.toFixed(1)+'°)']:[];
-      });
-      q('[data-aspect]').textContent=aspects.length?'Aspects to the natal Sun: '+aspects.join(' · '):'No listed aspects to the natal Sun at this time.';
+      q('[data-profile]').innerHTML=natalReading(a,house);
+      q('[data-month-title]').textContent='The monthly horoscope that an astrologer would give you for the month starting '+readingDate.format(start);
+      q('[data-month]').innerHTML=monthlyReading(a,month,end,house);
       render();
     }catch(error){
       if(!closed&&rev===revision)q('[data-status]').textContent='Sky positions could not be calculated for these entries.';

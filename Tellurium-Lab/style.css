@@ -149,3 +149,6 @@ nav{flex-wrap:wrap}
 .hr-population{height:9px;background:#9dbafe65;border-radius:8px}
 .hr-track{height:0;border-top:2px solid #ffd087}
 .hr-track::after{content:"›";display:block;text-align:right;color:#ffd087;line-height:0}
+.astro-reading{margin-top:16px;padding:14px 16px;border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:10px;background:#101b2e}
+.astro-reading h3{margin-top:0}
+.astro-reading li+li{margin-top:8px}
