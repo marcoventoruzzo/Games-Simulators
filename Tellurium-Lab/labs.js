@@ -149,7 +149,7 @@ function skyLab(root){
     card('What color is the Sun from space?',
     '<p><strong>White to human eyes.</strong> The Sun emits across the visible spectrum. Those wavelengths combine to make nearly white light outside the atmosphere. Through air its direct light can look warmer, especially at low elevation. A white disk represents the combined light.</p>'+
     slider('rocket-alt','Rocket altitude (km)',0,150,0)+out('rocket-read')+canvas('rocket','Rocket climbing from its launch gantry beside a view of the Sun')+
-    '<p>The color change is exaggerated. Even at ground level, a high Sun can look nearly white. The atmosphere thins gradually, so the white disk emerges gradually too.</p>')+card('How a rainbow follows you',
+    '<p>The color change is exaggerated. Even at ground level, a high Sun can look nearly white. The 100 km line marks a convention. The atmosphere thins gradually, so the white disk emerges gradually too.</p>')+card('How a rainbow follows you',
     '<p>With the Sun behind you, some sunlight bends as it enters a drop, reflects once off the back, and bends again as it leaves. Water bends violet more than red. The brightest rays reach your eye about 40° (violet) to 42° (red) from the direction opposite the Sun.</p>'+
     '<div class="lab-rows">'+canvas('drop','Refraction, one internal reflection, and dispersion in a raindrop')+canvas('bow','Rainbow circle centered on the direction opposite the Sun')+'</div>'+
     slider('bow-view','Raise the viewpoint above the ground (illustrative)',0,100,0)+out('bow-note')+
@@ -240,6 +240,9 @@ function skyLab(root){
       const {ctx:c,w,h}=rocket;
       background(c,w,h,'#030813','#416896');
       c.fillStyle='#233747';c.fillRect(0,h*.88,w,h*.12);
+      const boundary=h*.78-100/150*h*.55;
+      c.setLineDash([4,4]);line(c,[10,boundary],[w-10,boundary],'#bcd4f880');c.setLineDash([]);
+      text(c,'100 km · edge of space (conventional)',w-12,boundary-7,muted,'right');
       const x=w*.25,y=h*.78-km/150*h*.55;
       line(c,[x-26,h*.88],[x-26,h*.59],muted,3);
       for(let j=0;j<5;j++)line(c,[x-26,h*(.62+j*.052)],[x-10,h*(.65+j*.052)],muted);
@@ -425,7 +428,7 @@ function spectrum(c,w,h,rows,lo=380,hi=760){
 function dopplerLab(root){
   root.innerHTML=card('Read motion in a spectrum',
     '<p>A moving star’s spectral lines shift together. A receding star stretches their wavelengths toward red. An approaching star compresses them toward blue. Compare the same four hydrogen lines above and below.</p>'+
-    slider('velocity','Speed along the line of sight (km/s)',-30000,30000,12000,100)+out('doppler-read')+
+    slider('velocity','Speed along the line of sight (km/s)',-30000,30000,0,100)+'<div class="slider-directions"><span>Moving toward us</span><span>No radial motion</span><span>Moving away from us</span></div>'+out('doppler-read')+
     '<div class="lab-rows">'+canvas('spectrum','Rest-frame and Doppler-shifted hydrogen absorption spectra')+
     canvas('doppler-star','Illustrative round star colored by direction of motion')+'</div>'+
     '<p>The star’s tint is a visual cue. Real stellar Doppler shifts are usually detected in spectral lines because the overall color changes very little.</p>'+
@@ -454,24 +457,26 @@ function darkLab(root){
   root.innerHTML=card('Why is the night sky dark?',
     '<p>This is <strong>Olbers’ paradox</strong>. In an eternal, static universe filled uniformly with shining stars, each layer contains more stars in proportion to distance squared. Each one is fainter by the same factor. Add layers and the sky would eventually be covered by stellar surfaces.</p>'+
     '<div class="lab-actions">'+select('universe','Universe', [['real','Finite history · expanding'],['static','Eternal · static']])+'</div>'+
-    slider('shells','Layers of distance included',1,18,12)+out('dark-read')+'<div class="lab-rows">'+canvas('shellview','Illustrative contributions to sky brightness from equally thick layers')+
+    slider('shells','Maximum lookback time',1,18,18)+out('dark-read')+'<div class="lab-rows">'+canvas('shellview','Illustrative contributions to sky brightness from equally thick layers')+
     canvas('nightfield','Illustrative sky becoming brighter as more shells of stars contribute')+'</div>'+
     '<p>Light travels at a finite speed. Very distant light takes longer to arrive. There was an era before the first stars, so the observed sky cannot accumulate light from infinitely many layers of shining stars. Expansion also redshifts light and reduces energy arrival rates.</p>'+
-    '<details><summary>What our eyes miss</summary><p>Most stars are too distant and faint to see individually with the unaided eye. The sky still glows at wavelengths we cannot see. The early universe fills the sky with the cosmic microwave background. The bars compare shell contributions before stellar disks overlap. In the eternal model the final view illustrates the limiting case, in which every sight line ends on a stellar surface. Disk sizes and the number of layers needed to fill the view are illustrative.</p></details>');
+    '<p><strong>When Earth formed, about 4.54 billion years ago:</strong> stars already existed in the Milky Way. The sky would have had different stars and patterns. Looking back farther from Earth today shows earlier light from distant sources. It does not tell us how many stars could have been seen from the young Earth.</p>'+
+    '<details><summary>What our eyes miss</summary><p>Most stars are too distant and faint to see individually with the unaided eye. The sky still glows at wavelengths we cannot see. The early universe fills the sky with the cosmic microwave background. The bars compare shell contributions before stellar disks overlap. In the eternal model the final view illustrates the limiting case, in which every sight line ends on a stellar surface. Disk sizes and the number of layers needed to fill the view are illustrative. The last slider position switches to the infinite-time limit in the eternal model.</p></details>');
   return attach(root,()=>{
     const n=+$(root,'shells').value, real=$(root,'universe').value==='real';
     const env=canvasContext($(root,'shellview'));if(!env)return;
     const {ctx:c,w,h}=env;background(c,w,h);
-    const values=Array.from({length:n},(_,i)=>real?(i<9?Math.exp(-i*.18):0):1);
+    const lookback=n*13.8/18;
+    const values=Array.from({length:n},(_,i)=>real?Math.exp(-i*.18)*Math.max(0,Math.min(1,13.6*18/13.8-i)):1);
     const total=values.reduce((s,v)=>s+v,0);
-    $(root,'dark-read').textContent='Total contribution: '+total.toFixed(1)+' illustrative units';
+    $(root,'dark-read').textContent=(real?'Up to ':'Model window: ')+lookback.toFixed(2)+' billion years of lookback · '+total.toFixed(1)+' illustrative brightness units';
     const field=canvasContext($(root,'nightfield'));
     if(field){
       const {ctx:sc,w:sw,h:sh}=field;
       background(sc,sw,sh,'#040815','#091425');
       const rand=i=>Math.abs(Math.sin(i*127.1)*43758.5453)%1;
       if(real){
-        for(let i=1;i<=Math.min(n,9)*20;i++)dot(sc,rand(i)*sw,rand(i+301)*sh,.5+rand(i+990),'#fdf2dbac');
+        for(let i=1;i<=n*15;i++)dot(sc,rand(i)*sw,rand(i+301)*sh,.5+rand(i+990),'#fdf2dbac');
       }else{
         const radius=Math.max(2,sw/60), count=Math.round(5*(Math.exp(n*.45)-1));
         const colors=['#ffe19b','#ffd2a8','#fff5da','#e5edff','#f7e5ce'];
@@ -491,11 +496,16 @@ function darkLab(root){
     line(c,[38,base],[w-24,base],muted);
     values.forEach((v,i)=>{c.fillStyle=real?cyan:gold;c.fillRect(40+bw*i,base-v*h*.53,Math.max(2,bw-4),v*h*.53);});
     text(c,'Contribution by layer',38,24,ink,'left');
-    text(c,'Nearby',39,h-17,muted,'left');text(c,'More distant',w-25,h-17,muted,'right');
+    text(c,'Now',39,h-17,muted,'left');
+    text(c,'13.8 billion years back',w-25,h-17,muted,'right');
     if(real){
-      const x=39+9*bw;line(c,[x,44],[x,base],'#ffcf8c');
-      text(c,'Before stars',x+7,58,gold,'left');
+      const x=39+4.54/13.8*18*bw;
+      line(c,[x,42],[x,base],'#ffcf8c');
+      text(c,'Earth forms',x+5,56,gold,'left');
+    }else{
+      text(c,'The eternal model extends beyond this window',w*.54,44,muted);
     }
+
   });
 }
 
@@ -506,7 +516,7 @@ function measureLab(root){
     slider('distance','Model distance (parsecs)',1,50,5)+out('parallax')+
     '<div class="lab-rows">'+canvas('triangle','Two sightings, reference stars, and the angle p at the nearby star')+
     '<div><h3>One right triangle</h3><div id="live-parallax" class="display-math"></div><p><strong>tan p = 1 AU / d</strong>, so <strong>d = 1 AU / tan p</strong>. The known short side is half of Earth’s orbital baseline. The unknown long side is the distance to the star. For tiny angles this gives <strong>d(pc) ≈ 1 / p(arcsec)</strong>.</p><p>The fixed background stars give both exposures the same coordinate grid. Measure the shift against that grid. In this symmetric setup, half the shift equals angle p at the star.</p></div></div>'+
-    '<p>The angle is greatly enlarged. One parsec is about 3.26 light-years.</p><h3>When the shift is too small</h3><p>Compare how bright a star appears with how much energy it really emits. A star of known luminosity appears four times fainter at twice the distance. For Cepheid variables, the pulsation period gives a calibrated luminosity. For other stars, temperature, spectra and stellar models can help estimate luminosity. Astronomers correct for dust, which also makes stars look fainter.</p>')+
+    '<p>The angle is greatly enlarged. One parsec (pc) is about <strong>3.26 light-years</strong>, <strong>206,265 AU</strong>, or <strong>30.9 trillion km</strong>. At that distance, a 1 AU baseline gives a parallax of one arcsecond.</p><h3>Distances to very distant stars</h3><p>When the parallax of a distant star is too small to measure reliably, compare how bright a star appears with how much energy it really emits. A star of known luminosity appears four times fainter at twice the distance. For Cepheid variables, the pulsation period gives a calibrated luminosity. For other stars, temperature, spectra and stellar models can help estimate luminosity. Astronomers correct for dust, which also makes stars look fainter.</p>')+
     card('Identify the elements in a star',
     '<p>A spectrograph spreads light into a rainbow. Each atom can gain or lose only certain amounts of energy. That fixes which wavelengths it can absorb or emit, giving each element a pattern you can match to a lab spectrum.</p><p><strong>Absorption:</strong> when a hot stellar surface shines through cooler gas, the gas removes some colors from the beam. They show up as dark lines. <strong>Emission:</strong> excited atoms in a thin glowing gas give off light at specific wavelengths. Those same transitions can show up as bright lines. The <strong>same spectrograph</strong> can record both. What changes is the source of light.</p>'+
     '<div class="lab-actions">'+select('element','Element / ion',[['h','Hydrogen'],['na','Neutral sodium'],['ca','Ionized calcium']])+select('kind','Spectrum',[['abs','Absorption'],['em','Emission']])+'</div>'+
@@ -590,6 +600,9 @@ function lightSpeedLab(root){
     '<div class="display-math"><span>E² = (mc²)² + (pc)²</span><span>v = '+frac('pc²','E')+'</span></div>'+
     '<p><strong>Momentum</strong> is the quantity of motion. It has a direction. At ordinary speeds its magnitude is mass × speed. Near light speed a massive body follows <em>p = γmv</em>. Light also carries momentum, so it can push on a surface.</p>'+
     '<p><strong>E</strong> is total energy, <strong>m</strong> is rest mass, and <strong>p</strong> is the magnitude of momentum. For an object at rest, p = 0, and the relation reduces to <strong>E = mc²</strong>. For a photon, m = 0, so <strong>E = pc</strong>. Substituting into the velocity formula gives <strong>v = c</strong> for any photon with nonzero energy. A massive particle has E &gt; pc and therefore v &lt; c. Adding momentum gets it closer to c and requires ever more energy.</p>')+
+    card('Why physicists set c = 1',
+    '<p>In <strong>natural units</strong> you can measure time in seconds and distance in light-seconds. Light in vacuum covers one light-second in one second, so its speed has the numerical value <strong>c = 1</strong>. One light-second is about 300,000 km.</p>'+
+    '<p>Multiplying a time interval by <strong>c</strong> expresses it in units of length. That is why spacetime diagrams often use <strong>ct</strong> and <strong>x</strong> on their axes. With the same scale on both axes a light ray travels at 45°. The choice of units leaves the physical speed limit intact.</p>')+
     card('Where the number comes from',
     '<p>The equation establishes the relationship among energy, momentum, mass, and speed. Its symbols alone cannot give a numerical value for c. Time-of-flight measurements compare a known distance with the travel time of a light pulse. Today the SI defines the meter using the fixed vacuum value <strong>299,792,458 meters per second</strong>, about <strong>300,000 km/s</strong>.</p>'+
     slider('distance-light','One-way distance (km)',1000,400000,384400,100)+out('flight')+
