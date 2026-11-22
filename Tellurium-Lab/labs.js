@@ -1,3 +1,4 @@
+import {mountMeridian,mountStarNavigation} from './field-astronomy.js';
 import {mountCosmicZoom,mountMiniStellarium,mountSolarScale} from './exploration.js';
 import {mountAstrology} from './astrology.js';
 import {mountPlanets} from './planets.js';
@@ -845,7 +846,7 @@ function galileoLab(root){
   return ()=>{};
 }
 
-const labs={analemma,sky:skyLab,stars:starLab,birth:mountBirth,doppler:dopplerLab,dark:darkLab,measure:measureLab,'light-speed':lightSpeedLab,'black-hole':mountBlackHole,planets:mountPlanets,retrograde:retrogradeLab,'cosmic-zoom':mountCosmicZoom,'mini-stellarium':mountMiniStellarium,'solar-scale':mountSolarScale,galileo:galileoLab,astrology:mountAstrology};
+const labs={analemma,meridian:mountMeridian,navigation:mountStarNavigation,sky:skyLab,stars:starLab,birth:mountBirth,doppler:dopplerLab,dark:darkLab,measure:measureLab,'light-speed':lightSpeedLab,'black-hole':mountBlackHole,planets:mountPlanets,retrograde:retrogradeLab,'cosmic-zoom':mountCosmicZoom,'mini-stellarium':mountMiniStellarium,'solar-scale':mountSolarScale,galileo:galileoLab,astrology:mountAstrology};
 export function mountLab(root,key,api,year){
   return labs[key](root,api,year);
 }

@@ -176,3 +176,17 @@ nav{flex-wrap:wrap}
 .scale-cards p{margin:6px 0 0;font-size:.86rem}
 .scale-sun span{display:inline-block;vertical-align:middle;font-size:2rem;margin-right:7px}
 .sky-targets button{white-space:normal;text-align:left}
+.field-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.22fr);gap:16px;align-items:start}
+.field-figure{display:block;width:100%;max-width:460px;margin:0 auto 10px;background:#0a1424;border-radius:12px}
+.field-figure text{fill:#e4efff;font:600 12px system-ui}
+.field-plate{fill:#17273f;stroke:#3b587e}
+.field-gold{fill:#ffcb8c}
+.field-cyan{fill:#91c8ff}
+.field-guide{stroke:#597596;stroke-width:1;fill:none}
+.field-goldline{stroke:#ffcb8c;stroke-width:2;fill:none}
+.field-cyanline{stroke:#91c8ff;stroke-width:2;fill:none}
+.field-lab li+li{margin-top:9px}
+.field-table table{width:100%;border-collapse:collapse}
+.field-table th,.field-table td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+.field-table td{font-variant-numeric:tabular-nums}
+@media(max-width:670px){.field-columns{grid-template-columns:1fr}.field-table th,.field-table td{padding:6px 4px}}

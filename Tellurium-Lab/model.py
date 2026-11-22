@@ -471,3 +471,24 @@ def mini_stellarium(date, lat, lon):
 
 
 OPERATIONS['mini_stellarium'] = mini_stellarium
+
+
+@lru_cache(maxsize=4)
+def florence_dial(year):
+    lat, lon = 43.769, 11.256
+    observer = ae.Observer(lat, lon, 0)
+    start = ae.Time(f'{year}-01-01T00:00:00Z')
+    end = ae.Time(f'{year+1}-01-01T00:00:00Z')
+    result = []
+    for day in range(round(end.ut - start.ut)):
+        mean = start.AddDays(day + (12 - lon/15) / 24)
+        transit = ae.SearchHourAngle(SUN, observer, 0, mean.AddDays(-.04)).time
+        eq = ae.Equator(SUN, mean, observer, True, True)
+        h = ae.Horizon(mean, observer, eq.ra, eq.dec, ae.Refraction.Airless)
+        az, alt = radians(h.azimuth), radians(h.altitude)
+        result.append([iso(mean)[:10], sin(az)/cos(az), -sin(alt)/(cos(alt)*cos(az)),
+                       (mean.ut - transit.ut)*1440, ae.SunPosition(mean).elon])
+    return result
+
+
+OPERATIONS['florence_dial'] = florence_dial
