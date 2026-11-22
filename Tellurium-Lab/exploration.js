@@ -124,9 +124,10 @@ export function mountSolarScale(root){
     q('[data-scale-note]').innerHTML=choice?`<p class="scale-sun"><span aria-hidden="true">${choice.icon}</span> <strong>The Sun is a ${choice.diameter/10} cm ${choice.label}.</strong> At this full-system scale, even the Sun is smaller than a screen pixel. The symbols mark positions. The object icon is enlarged.</p>`:'<p><strong>Illustration.</strong> Planet sizes and spacing are exaggerated.</p>';
     q('[data-planets]').innerHTML=choice?planets.map(([name,diameter,dist,, ,object],i)=>{
       const mm=diameter*choice.diameter/sunKm;
-      const km=dist*choice.diameter/sunKm;
+      const meters=dist*choice.diameter*1000/sunKm;
+      const yards=meters/.9144;
       const comparison=choice.label==='orange'?object:['a small grain of sand','a sesame seed','a sesame seed','a grain of coarse salt','a large marble','a small marble','a pea','a pea'][i];
-      return `<details open><summary>${name}</summary><p>About the size of ${comparison} (<strong>${format.format(mm)} mm</strong>).<br><strong>${format.format(km)} km / ${format.format(km*.621371)} mi</strong> from the Sun.</p></details>`;
+      return `<details open><summary>${name}</summary><p>About the size of ${comparison} (<strong>${format.format(mm)} mm</strong>).<br><strong>${format.format(meters)} m / ${format.format(yards)} yd</strong> from the Sun.</p></details>`;
     }).join(''):'';
     if(matchMedia('(prefers-reduced-motion: reduce)').matches){progress=target;draw();return}
     function animate(now){
