@@ -131,3 +131,9 @@ nav{flex-wrap:wrap}
 .astro-glyph{font-size:1.1em;color:var(--blue);font-variant-emoji:text}
 .astro-meanings h3{margin-top:1.35rem}
 .astro-meanings dl{grid-template-columns:minmax(6.5em,auto) 1fr}
+.kepler-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}
+.kepler-cards section{background:#101b2e;border:1px solid var(--line);border-radius:10px;padding:12px}
+.kepler-cards h4{margin:0 0 10px}
+.kepler-mini{display:block;width:100%;max-width:320px;margin:auto;background:#090f1b;border-radius:8px}
+.kepler-mini text{fill:#dbe7f7;font:11px system-ui;text-anchor:middle}
+.oort-note{margin:12px 0}

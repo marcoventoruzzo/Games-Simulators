@@ -38,14 +38,38 @@ function keplerGraph(){
     <text transform="translate(17 155) rotate(-90)" text-anchor="middle">Orbital period (Earth years)</text></svg>
     <p>Both axes are logarithmic. The dashed line shows the approximate T² ∝ a³ relationship for orbits around the Sun.</p></details>`;
 }
+function keplerIllustrations(){
+  const diagram=(label,body)=>`<svg class="kepler-mini" viewBox="0 0 220 128" role="img" aria-label="${label}">${body}</svg>`;
+  const ellipse='<ellipse cx="110" cy="62" rx="80" ry="57.13" fill="none" stroke="#7496bf"/>';
+  const sun='<circle cx="166" cy="62" r="5" fill="#ffd089"/>';
+  const sector=(center,half,color)=>{
+    const at=a=>[110+80*Math.cos(a),62+57.13*Math.sin(a)].map(n=>n.toFixed(2)).join(' ');
+    return `<path d="M166 62 L${at(center-half)} A80 57.13 0 0 1 ${at(center+half)} Z" fill="${color}" fill-opacity=".49" stroke="${color}"/>`;
+  };
+  // Equal elapsed times correspond to equal changes in mean anomaly M = E − e sin E.
+  const near=.9, mean=near-.7*Math.sin(near);
+  let far=mean;
+  for(let i=0;i<5;i++)far-=(far+.7*Math.sin(far)-mean)/(1+.7*Math.cos(far));
+  return [
+    diagram('An elliptical orbit with the Sun at one focus and the other focus empty',ellipse+sun+
+      '<circle cx="54" cy="62" r="3" fill="#9bb1cb"/><text x="166" y="84">Sun</text><text x="54" y="84">Empty focus</text><circle cx="110" cy="5" r="4" fill="#8ed4ff"/>'),
+    diagram('Equal shaded areas swept in equal times, with a longer arc near the Sun',
+      sector(0,near,'#e9ad65')+sector(Math.PI,far,'#75c1ed')+ellipse+sun+
+      '<text x="76" y="111">Equal areas</text><text x="167" y="111">Equal times</text>'),
+    diagram('Doubling the semimajor axis makes an orbit take about 2.83 times as long',
+      '<circle cx="59" cy="63" r="48" fill="none" stroke="#e9ad65"/><circle cx="59" cy="63" r="24" fill="none" stroke="#75c1ed"/><circle cx="59" cy="63" r="5" fill="#ffd089"/><circle cx="59" cy="39" r="4" fill="#75c1ed"/><circle cx="107" cy="63" r="4" fill="#e9ad65"/><text x="160" y="49" fill="#75c1ed">1 AU · 1 year</text><text x="160" y="82" fill="#e9ad65">2 AU · 2.83 years</text>')
+  ];
+}
+
 function comparisonTable(){
+  const [orbits,areas,periods]=keplerIllustrations();
   return `<h3 class="planet-table-title">The Planets of the Solar System</h3>
   <div class="planet-table-scroll"><table class="planet-table"><thead><tr><th scope="col">Property</th>${planets.map(([name,color])=>`<th scope="col" style="--planet:${color}"><span class="planet-swatch"></span>${name}</th>`).join('')}</tr></thead>
   <tbody>${tableLabels.map((label,i)=>`<tr><th scope="row">${label}</th>${planets.map(([,color,,values])=>`<td style="--planet:${color}">${values[i]}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
-  <section class="planet-laws"><h3>Kepler’s Laws · How Planets Move</h3><div class="lab-rows">
-  <p><strong>1 · Orbits</strong><br>Each planet moves in an ellipse with the Sun at one focus.</p>
-  <p><strong>2 · Areas</strong><br>The line from the Sun to the planet sweeps out equal areas in equal times.</p>
-  <p><strong>3 · Periods</strong><br>The square of the orbital period is proportional to the cube of the orbit’s semimajor axis. <strong>T² ∝ a³</strong>.</p></div></section>${keplerGraph()}`;
+  <section class="planet-laws"><h3>Kepler’s Laws · How Planets Move</h3><div class="kepler-cards">
+  <section><h4>1 · Elliptical orbits</h4>${orbits}<p>The Sun sits at one focus of the ellipse.</p></section>
+  <section><h4>2 · Equal areas</h4>${areas}<p>The planet covers a longer arc near the Sun in the same time. The two shaded areas are equal.</p></section>
+  <section><h4>3 · Orbital periods</h4>${periods}<p>Farther orbits take longer. <strong>T² ∝ a³</strong>, where <em>a</em> is the semimajor axis.</p></section></div></section>${keplerGraph()}`;
 }
 
 export function mountPlanets(root){
@@ -62,6 +86,16 @@ export function mountPlanets(root){
       <div class="slate-face slate-back" inert>${comparisonTable()}</div>
     </div></div>
     <p>The <strong>Main Asteroid Belt</strong> lies between Mars and Jupiter. Beyond Neptune, the <strong>Kuiper Belt</strong> is home to icy bodies, including Pluto.</p>
+    <details class="oort-note"><summary>Beyond the Kuiper Belt · Oort Cloud</summary>
+      <div class="lab-rows">
+      <svg class="kepler-mini" viewBox="0 0 220 128" role="img" aria-label="A nearly spherical cloud surrounds a tiny flattened planetary system. Distances are not to scale.">
+        <circle cx="110" cy="62" r="52" fill="#223855" fill-opacity=".45" stroke="#94bcdf" stroke-dasharray="2 5"/>
+        <ellipse cx="110" cy="62" rx="52" ry="19" fill="none" stroke="#94bcdf" stroke-opacity=".45" stroke-dasharray="2 4"/>
+        <ellipse cx="110" cy="62" rx="18" ry="5" fill="none" stroke="#79cde7"/><circle cx="110" cy="62" r="3" fill="#ffd089"/>
+        <text x="110" y="122">Schematic · not to scale</text>
+      </svg>
+      <p>Scientists infer that a vast, roughly spherical cloud of icy objects surrounds the solar system far beyond the Kuiper Belt. It is thought to supply many long-period comets. The small blue oval shows the flattened planetary region for comparison.</p></div>
+    </details>
     <p>The reverse reproduces the comparison in English, with the same planet order and measurements. Seasonal and day–night ranges are illustrative and depend on location, altitude and measurement method. Giant-planet temperatures and gravity refer to atmospheric reference levels.</p>
   </article>`;
   const canvas=root.querySelector('canvas'), panel=root.querySelector('.planet-info');
