@@ -148,17 +148,26 @@ function sextantView(nocturnal,adjusted,target){
     label(26,61,adjusted.toFixed(1)+'°','start')+label(180,224,'Adjust the index arm until the rays meet'));
 }
 
-function watchFace(south){
+function watchFace(south,time){
   const x=180,y=128,r=76,point=(h,length)=>[x+Math.sin(h*30*rad)*length,y-Math.cos(h*30*rad)*length];
-  const sunAt=south?0:4,poleAt=2;
+  const offset=time-12, sunAt=south?0:offset, poleAt=offset/2;
+  const angleRadius=86;
   let dial=`<circle cx="${x}" cy="${y}" r="${r}" class="field-plate"/>`;
   for(let h=0;h<12;h++)dial+=label(...point(h,r-12).map((v,i)=>v+(i?4:0)),h||12);
-  dial+=line(x,y,...point(4,47),'field-cyanline')+line(x,y,...point(0,39),'field-guide')+
-    line(...point(poleAt+6,95),...point(poleAt,95),'field-goldline')+dot(x,y,4)+
-    dot(...point(sunAt,94),8)+label(...point(sunAt,115).map((v,i)=>v+(i?3:0)),'Sun')+
-    label(...point(poleAt,119).map((v,i)=>v+(i?4:0)),south?'N ≈':'S ≈')+
-    label(...point(poleAt+6,118).map((v,i)=>v+(i?4:0)),south?'S ≈':'N ≈')+label(180,238,'Example · 4 p.m. standard time');
-  return figure('Watch face with a line halfway between the hour hand and twelve',dial);
+  if(offset){
+    const from=point(offset,angleRadius),to=point(0,angleRadius);
+    dial+=`<path d="M${from.join(' ')} A${angleRadius} ${angleRadius} 0 ${Math.abs(offset)>6?1:0} ${offset<0?1:0} ${to.join(' ')}" class="field-goldline"/>`;
+    const head=point(Math.sign(offset)*.3,angleRadius);
+    dial+=line(...to,...[head[0],head[1]-4],'field-goldline')+line(...to,...[head[0],head[1]+4],'field-goldline');
+  }
+  dial+=line(...point(poleAt+6,94),...point(poleAt,94),'field-guide')+
+    line(x,y,...point(poleAt,96),'field-goldline')+
+    line(x,y,...point((time%1)*12,68),'field-minute-hand')+
+    line(x,y,...point(offset,44),'field-hour-hand')+dot(x,y,4)+
+    dot(...point(sunAt,106),7)+
+    label(...point(poleAt,112).map((v,i)=>v+(i?3:0)),south?'N ≈':'S ≈')+
+    label(...point(poleAt+6,112).map((v,i)=>v+(i?4:0)),south?'S ≈':'N ≈');
+  return figure('The long thin minute hand, short hour hand, and the arc from the hour hand to noon',dial);
 }
 
 export function mountStarNavigation(root){
@@ -179,9 +188,11 @@ export function mountStarNavigation(root){
       <p><a href="https://www.rmg.co.uk/stories/time/harrisons-clocks-longitude-problem">Royal Museums Greenwich · Harrison’s timekeepers</a> · <a href="https://aa.usno.navy.mil/data/celnav">U.S. Naval Observatory · sight corrections</a></p>
     </article>
     <article class="lab-card"><h3>3 · Find a rough compass direction with a watch</h3>
-      <div class="lab-actions"><label>Hemisphere <select data-hemisphere><option value="north">Northern</option><option value="south">Southern</option></select></label></div>
+      <div class="lab-actions"><label>Hemisphere <select data-hemisphere><option value="north">Northern</option><option value="south">Southern</option></select></label><label>Standard time <input type="range" data-watch-time min="6" max="20" step=".25" value="16"></label><output class="lab-readout" data-watch-time-label></output></div>
       <div class="field-columns"><div data-watch></div><div><p>Hold an analog watch flat. Use the direction opposite a vertical stick’s shadow to locate the Sun’s bearing without looking at it. Work in local standard time. If your clock is an hour ahead for summer time, mentally turn it back an hour first.</p>
       <p data-watch-instruction></p>
+      <p><strong>Which way around?</strong> Trace the hours between your time and noon. In the morning, go <strong>clockwise</strong> from the hour hand to 12. In the afternoon, go <strong>counterclockwise</strong> from the hour hand back to 12. At 7 p.m. standard time, pass 6, 5, 4, and so on back toward noon. Halfway is the <strong>3:30 position</strong> on the dial. After 6 p.m., this is the longer arc. At exactly 6 p.m., use the right half of the dial.</p>
+      <p class="fine">Blue: short hour hand. White: long minute hand. Gold dot: direction of the Sun. Gold arc: the route to halve.</p>
       <p>On a watch the hour hand turns 30° per hour. The Sun’s hour angle changes about 15° per hour. Halving the watch angle gives a rough north–south line. The Sun’s compass bearing is only an approximation to that geometry. The trick works best as a midlatitude demonstration around the middle of the day. Longitude within a time zone and the Sun’s high altitude can cause large errors. Use a compass or GPS for practical navigation.</p></div></div>
     </article>
   </div>`;
@@ -196,14 +207,15 @@ export function mountStarNavigation(root){
     slider.oninput=draw;draw();
   };
   setup('day',false,50);setup('night',true,45.5);
-  const hemisphere=q(root,'[data-hemisphere]');
+  const hemisphere=q(root,'[data-hemisphere]'),time=q(root,'[data-watch-time]');
   const draw=()=>{
     const south=hemisphere.value==='south';
-    q(root,'[data-watch]').innerHTML=watchFace(south);
+    q(root,'[data-watch]').innerHTML=watchFace(south,+time.value);
+    q(root,'[data-watch-time-label]').textContent=clockTime(+time.value*60)+' standard time';
     q(root,'[data-watch-instruction]').textContent=south
       ? 'Point 12 toward the Sun’s bearing. Halfway between 12 and the hour hand is roughly north. The opposite end is roughly south.'
       : 'Point the hour hand toward the Sun’s bearing. Halfway between the hour hand and 12 is roughly south. The opposite end is roughly north.';
   };
-  hemisphere.onchange=draw;draw();
+  hemisphere.onchange=time.oninput=draw;draw();
   return ()=>{};
 }

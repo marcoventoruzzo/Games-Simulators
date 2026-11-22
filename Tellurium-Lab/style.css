@@ -190,3 +190,5 @@ nav{flex-wrap:wrap}
 .field-table th,.field-table td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
 .field-table td{font-variant-numeric:tabular-nums}
 @media(max-width:670px){.field-columns{grid-template-columns:1fr}.field-table th,.field-table td{padding:6px 4px}}
+.field-minute-hand{stroke:#e1e9f6;stroke-width:1.15;stroke-linecap:round}
+.field-hour-hand{stroke:#91c8ff;stroke-width:3.1;stroke-linecap:round}
