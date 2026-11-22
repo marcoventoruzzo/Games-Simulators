@@ -3,7 +3,7 @@ import {canvasContext} from './scene.js';
 const rad=Math.PI/180;
 const blue='#a6d5ff',gold='#ffcf90';
 const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
-const localPoints={N:[0,0],S:[180,0],Zenith:[0,90],Nadir:[0,-90]};
+const zenith=[0,90],nadir=[0,-90];
 const directions=['N','NE','E','SE','S','SW','W','NW'];
 const vector=([a,h])=>[Math.cos(h*rad)*Math.sin(a*rad),Math.cos(h*rad)*Math.cos(a*rad),Math.sin(h*rad)];
 const dot=(a,b)=>a.reduce((sum,n,i)=>sum+n*b[i],0);
@@ -55,8 +55,8 @@ export function mountZodiacSky(canvas,controls){
     }
     trace(Array.from({length:91},(_,i)=>[i*4,0]),'#d3e3ef80',-1);
     for(const [i,name] of directions.entries())mark(name,[i*45,0],blue,2);
-    mark('Zenith',localPoints.Zenith,blue,2.5);
-    if(showHidden)mark('Nadir',localPoints.Nadir,blue,2.5);
+    mark('Zenith',zenith,blue,2.5);
+    if(showHidden)mark('Nadir',nadir,blue,2.5);
     if(showHidden||!daytime){
       c.setLineDash([3,4]);trace(birth.ecliptic,'#ffd29d9e',showHidden?-90:0);c.setLineDash([]);
       for(const [name,stars] of Object.entries(birth.constellations)){
@@ -90,12 +90,6 @@ export function mountZodiacSky(canvas,controls){
   const resize=new ResizeObserver(draw);resize.observe(canvas);
   return {
     set(data){birth=data;pointAt(data.sky.Sun);},
-    lookAt(name){
-      if(!birth||!Object.hasOwn(localPoints,name))return false;
-      if(name==='Nadir')controls.querySelector('input').checked=true;
-      pointAt(localPoints[name]);
-      return true;
-    },
     dispose(){resize.disconnect();}
   };
 }

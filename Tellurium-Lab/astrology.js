@@ -103,6 +103,30 @@ function wheel(canvas,birth,transit){
   }
   label(transit?'Natal + transits':'Natal chart',[x,y-10],faint,13);
   label('Horizon',[x,y+11],gold,10);
+  if(!transit){
+    // Draw a depth cue inside the empty center, separate from the ecliptic rings.
+    for(const [direction,offset,tip,tail,head] of [
+      ['N',-31,-9,3,4],
+      ['S',33,9,2,5]
+    ]){
+      const py=y+offset;
+      const shade=c.createLinearGradient(x,py-9,x,py+9);
+      shade.addColorStop(0,'#7c9bbd');
+      shade.addColorStop(1,blue);
+      c.fillStyle=shade;
+      c.beginPath();
+      c.moveTo(x,py+tip);
+      c.lineTo(x-head,py+tip/4);
+      c.lineTo(x-tail,py+tip/4);
+      c.lineTo(x-tail,py-tip);
+      c.lineTo(x+tail,py-tip);
+      c.lineTo(x+tail,py+tip/4);
+      c.lineTo(x+head,py+tip/4);
+      c.closePath();
+      c.fill();
+      label(direction,[x+13,py],blue,12);
+    }
+  }
 }
 
 export function mountAstrology(root,api){
@@ -134,19 +158,8 @@ export function mountAstrology(root,api){
     <canvas data-ground tabindex="0" aria-label="Birth sky. Drag or use the arrow keys to look around."></canvas>
     <div class="lab-actions" data-sky-controls><button data-look="Sun">Look toward the Sun</button><button data-look="ASC">Look at the ascendant</button><button data-look="DSC">Look at the descendant</button><button data-look="Taurus">Taurus</button><button data-look="Gemini">Gemini</button><label><input type="checkbox" checked> Show hidden sky</label><output></output></div>
     <p>The horizon separates sky from ground. The overlay reveals stars washed out by sunlight and positions below the horizon. The constellation figures connect a few bright stars. They illustrate the constellations without tracing official boundaries.</p></div>
-    <div><h3>The same sky as a birth chart</h3><canvas data-natal-wheel aria-label="Natal chart with twelve tropical signs, twelve equal houses, and the horizon from the eastern ascendant to the western descendant"></canvas>
-    <figure class="astro-local-frame" aria-labelledby="astro-frame-title">
-      <figcaption id="astro-frame-title">Local sky · facing east</figcaption>
-      <div class="astro-compass" data-compass>
-        <button type="button" data-direction="Zenith" aria-label="Look at the zenith in the ground view">Zenith</button>
-        <button type="button" data-direction="N" aria-label="Look north in the ground view">N</button>
-        <span class="astro-compass-observer">You</span>
-        <button type="button" data-direction="S" aria-label="Look south in the ground view">S</button>
-        <button type="button" data-direction="Nadir" aria-label="Look at the nadir in the ground view">Nadir</button>
-      </div>
-      <p>North is on your left and south is on your right when you face east. The zenith is directly overhead (90° up). The nadir is directly below your feet (90° down). This cross shows local directions. The wheel above shows positions along the ecliptic.</p>
-    </figure>
-    <p><strong>Sun sign:</strong> the 30° sector of the ecliptic containing the Sun. Think of the ecliptic as the Sun’s yearly route against the stars. <strong>Ascendant:</strong> the point on that route rising on the eastern horizon. The <strong>Descendant</strong> is the opposite point, setting on the western horizon. The gold line connects those two directions. The top half shows ecliptic directions above the horizon. The bottom half shows directions below it. E and W mark the eastern and western halves of the horizon. Find the exact compass bearings below.</p>
+    <div><h3>The same sky as a birth chart</h3><canvas data-natal-wheel aria-label="Natal chart with twelve tropical signs, twelve equal houses, and the horizon from the eastern ascendant to the western descendant. At the center, north points away from the viewer and south points toward the viewer."></canvas>
+    <p><strong>Sun sign:</strong> the 30° sector of the ecliptic containing the Sun. Think of the ecliptic as the Sun’s yearly route against the stars. <strong>Ascendant:</strong> the point on that route rising on the eastern horizon. The <strong>Descendant</strong> is the opposite point, setting on the western horizon. The gold line connects those two directions. The top half shows ecliptic directions above the horizon. The bottom half shows directions below it. E and W mark the eastern and western halves of the horizon. Imagine standing at the center and facing north. The small N arrow recedes into the screen in front of you. The S arrow comes toward you, along the direction behind you. These two arrows are a compass cue. The zodiac rings still show positions along the ecliptic. The bearings below give the actual rising and setting directions.</p>
     <p><strong>Houses:</strong> twelve 30° sectors in this example, starting at the ascendant. Astrology traditionally associates them with areas of life, such as self (1), home (4), and partnerships (7). Other systems draw different boundaries.</p>
     <div data-natal></div><p>The IAU column gives the constellation on the star map. A star marker (✦) identifies constellations outside the zodiac band.</p></div></div></article>
     <article class="lab-card"><h2>Read the sky for a chosen day</h2>
@@ -164,10 +177,6 @@ export function mountAstrology(root,api){
     </div>`;
   const q=s=>root.querySelector(s), [,natalCanvas,transitCanvas,precession]=root.querySelectorAll('canvas');
   const ground=mountZodiacSky(q('[data-ground]'),q('[data-sky-controls]'));
-  q('[data-compass]').onclick=event=>{
-    const direction=event.target.closest('button')?.dataset.direction;
-    if(ground.lookAt(direction))q('[data-ground]').focus();
-  };
   const form=q('form'), birth=q('#astro-birth'), day=q('#astro-day'), site=form.querySelector('select');
   let current, sky, comparison, period='modern', revision=0, closed=false;
   function drawPrecession(){
