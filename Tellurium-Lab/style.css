@@ -85,3 +85,25 @@ nav{flex-wrap:wrap}
 .black-hole-card img{display:block;width:100%;border-radius:10px;background:#05070d}
 .black-hole-card figcaption{margin:8px 0;color:var(--faint);font-size:.8rem}
 .black-hole-card [data-feedback]{min-height:3em;color:var(--gold)}
+.slate{perspective:1300px}
+.slate-inner{display:grid;position:relative;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.3,.6,.1,1);transform-origin:center}
+.slate.flipped .slate-inner{transform:rotateX(180deg)}
+.slate-face{grid-area:1/1;min-width:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:#101b2d;border:1px solid var(--line);border-radius:12px}
+.slate-front{position:relative;padding:12px}
+.slate-back{transform:rotateX(180deg);height:100%;min-height:0;max-height:100%;overflow:auto;padding:12px;position:absolute;inset:0}
+.slate-back img{display:block;width:min(100%,850px);margin:0 auto}
+.slate-back details{margin:14px 0}
+.planet-orbit{position:relative}
+.planet-orbit canvas{height:clamp(310px,53vw,620px);margin:0}
+.planet-orbit button{position:absolute;left:50%;top:50%;width:30px;height:30px;min-width:0;padding:0;transform:translate(-50%,-50%);border:0;background:transparent;border-radius:50%}
+.planet-orbit button:after{content:'';position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:var(--disc,10px);height:var(--disc,10px);background:radial-gradient(circle at 32% 30%,#ffffffbd,var(--planet) 43%,#152339 100%);border-radius:50%}
+.planet-info{position:absolute;right:14px;top:14px;z-index:2;width:min(360px,calc(100% - 28px));max-height:calc(100% - 28px);overflow:auto;background:#182741;border:1px solid #789acb;border-radius:12px;padding:12px}
+.planet-info-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.planet-info-head h3{margin:0}
+.planet-info dl{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;font-size:.83rem}
+.planet-info dd{margin:0;color:var(--ink)}
+.planet-info dt{color:var(--faint)}
+.astro-lab canvas{height:clamp(310px,43vw,510px)}
+.astro-table{width:100%;font-size:.82rem;border-collapse:collapse}
+.astro-table th,.astro-table td{text-align:left;padding:5px 4px;border-bottom:1px solid var(--line)}
+@media(prefers-reduced-motion:reduce){.slate-inner{transition:none}}

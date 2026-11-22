@@ -1,3 +1,5 @@
+import {mountAstrology} from './astrology.js';
+import {mountPlanets} from './planets.js';
 import {mountBlackHole} from './black-hole.js';
 import {mountBirth} from './birth.js';
 import {canvasContext} from './scene.js';
@@ -519,8 +521,10 @@ function measureLab(root){
     '<div class="lab-rows">'+canvas('triangle','Two sightings, reference stars, and the angle p at the nearby star')+
     '<div><h3>One right triangle</h3><div id="live-parallax" class="display-math"></div><p><strong>tan p = 1 AU / d</strong>, so <strong>d = 1 AU / tan p</strong>. The known short side is half of Earth’s orbital baseline. The unknown long side is the distance to the star. For tiny angles this gives <strong>d(pc) ≈ 1 / p(arcsec)</strong>.</p><p>The fixed background stars give both exposures the same coordinate grid. Measure the shift against that grid. In this symmetric setup, half the shift equals angle p at the star.</p></div></div>'+
     '<p>The angle is greatly enlarged. One parsec (pc) is about <strong>3.26 light-years</strong>, <strong>206,265 AU</strong>, or <strong>30.9 trillion km</strong>. At that distance, a 1 AU baseline gives a parallax of one arcsecond.</p><h3>Distances to very distant stars</h3><p>When the parallax of a distant star is too small to measure reliably, compare how bright a star appears with how much energy it really emits. A star of known luminosity appears four times fainter at twice the distance. For Cepheid variables, the pulsation period gives a calibrated luminosity. For other stars, temperature, spectra and stellar models can help estimate luminosity. Astronomers correct for dust, which also makes stars look fainter.</p>')+
-    card('Identify the elements in a star',
-    '<p>A spectrograph spreads light into a rainbow. Each atom can gain or lose only certain amounts of energy. That fixes which wavelengths it can absorb or emit, giving each element a pattern you can match to a lab spectrum.</p><p><strong>Absorption:</strong> when a hot stellar surface shines through cooler gas, the gas removes some colors from the beam. They show up as dark lines. <strong>Emission:</strong> excited atoms in a thin glowing gas give off light at specific wavelengths. Those same transitions can show up as bright lines. The <strong>same spectrograph</strong> can record both. What changes is the source of light.</p>'+
+    card('How light reveals what a star is made of',
+    '<p>We cannot scoop up a spoonful of a distant star. But a telescope can collect its light. A spectrograph spreads that light into a rainbow, called a <strong>spectrum</strong>. Look closely and you may see thin dark lines, where particular colors are missing.</p>'+
+    '<p><strong>Try sodium.</strong> Choose <em>Neutral sodium</em> below. In the lab, glowing sodium gives two bright yellow lines very close together. In the star, the same two wavelengths can show up as dark lines. The matching pattern tells us sodium is present in the gas the light passed through. Astronomers check several lines because a single line could be a coincidence.</p>'+
+    '<p><strong>Absorption:</strong> cooler gas in front of a bright surface takes particular wavelengths out of the beam. <strong>Emission:</strong> hot, thin gas seen against darkness adds light at particular wavelengths. The same instrument can record either pattern. In a star, the lines chiefly tell us what is in its atmosphere. To estimate how much is present, astronomers also account for temperature and other conditions.</p>'+
     '<div class="lab-actions">'+select('element','Element / ion',[['h','Hydrogen'],['na','Neutral sodium'],['ca','Ionized calcium']])+select('kind','Spectrum',[['abs','Absorption'],['em','Emission']])+'</div>'+
     out('chem-read')+canvas('chemical','Laboratory spectral fingerprint compared with stellar absorption or gas emission')+
     '<h3>Inside a slit spectrograph</h3><p>The telescope focuses starlight onto a slit. A collimator makes the beam parallel. A diffraction grating sends different wavelengths in different directions. Camera optics focus them onto different pixels of a detector.</p>'+
@@ -629,7 +633,7 @@ function lightSpeedLab(root){
   });
 }
 
-const labs={analemma,sky:skyLab,stars:starLab,birth:mountBirth,doppler:dopplerLab,dark:darkLab,measure:measureLab,'light-speed':lightSpeedLab,'black-hole':mountBlackHole};
+const labs={analemma,sky:skyLab,stars:starLab,birth:mountBirth,doppler:dopplerLab,dark:darkLab,measure:measureLab,'light-speed':lightSpeedLab,'black-hole':mountBlackHole,planets:mountPlanets,astrology:mountAstrology};
 export function mountLab(root,key,api,year){
   return labs[key](root,api,year);
 }

@@ -249,3 +249,28 @@ def request_json(payload):
     """Return plain JSON across the JavaScript bridge."""
     name, args = json.loads(payload)
     return json.dumps(OPERATIONS[name](*args), allow_nan=False)
+
+
+def zodiac_chart(date, latitude, longitude):
+    """Geocentric apparent zodiac positions and the geometric eastern horizon."""
+    from math import atan2
+    t = ae.Time(date)
+    sidereal = radians(15 * ae.SiderealTime(t) + longitude)
+    lat = radians(latitude)
+    rotation = ae.Rotation_EQD_ECT(t)
+    zenith = xyz(ae.RotateVector(rotation, ae.Vector(
+        cos(lat)*cos(sidereal), cos(lat)*sin(sidereal), sin(lat), t)))
+    east = xyz(ae.RotateVector(rotation, ae.Vector(-sin(sidereal), cos(sidereal), 0, t)))
+    crossing = [-zenith[1], zenith[0], 0]
+    if dot(crossing, east) < 0:
+        crossing = times(crossing, -1)
+    ascendant = degrees(atan2(crossing[1], crossing[0])) % 360
+    points = []
+    for name in ('Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'):
+        v = ae.GeoVector(getattr(ae.Body, name), t, True)
+        eq = ae.EquatorFromVector(v)
+        points.append([name, ae.Ecliptic(v).elon, ae.Constellation(eq.ra, eq.dec).name])
+    return dict(ascendant=ascendant, points=points)
+
+
+OPERATIONS['zodiac'] = zodiac_chart
