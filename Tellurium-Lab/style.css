@@ -76,3 +76,8 @@ nav{flex-wrap:wrap}
 .fraction>span:first-child{border-bottom:1px solid currentColor}
 
 .slider-directions{display:flex;justify-content:space-between;gap:8px;color:var(--faint);font-size:.8rem}.slider-directions span:nth-child(2){text-align:center}.slider-directions span:last-child{text-align:right}
+
+.birth-card canvas{height:clamp(260px,44vw,390px)}
+.birth-card [data-stage]{margin-top:12px;color:var(--gold)}
+.birth-card [data-description]{min-height:4.7em}
+.birth-card .birth-note{border-top:1px solid var(--line);padding-top:12px}

@@ -1,3 +1,4 @@
+import {mountBirth} from './birth.js';
 import {canvasContext} from './scene.js';
 
 const ink='#e4efff', muted='#9eb2ce', cyan='#88bbff', gold='#ffcb8c', grid='#2a3a56';
@@ -627,7 +628,7 @@ function lightSpeedLab(root){
   });
 }
 
-const labs={analemma,sky:skyLab,stars:starLab,doppler:dopplerLab,dark:darkLab,measure:measureLab,'light-speed':lightSpeedLab};
+const labs={analemma,sky:skyLab,stars:starLab,birth:mountBirth,doppler:dopplerLab,dark:darkLab,measure:measureLab,'light-speed':lightSpeedLab};
 export function mountLab(root,key,api,year){
   return labs[key](root,api,year);
 }
