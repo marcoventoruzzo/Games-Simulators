@@ -63,7 +63,8 @@ function globe(ctx,p,r,body,camera,light,pole=Z,prime=[1,0,0],red=false) {
   for(const [q,x,y,z,i,j] of normals){
     const lit=clamp(x*l[0]+y*l[1]+z*l[2],0,1);
     if(body==='sun'){
-      const n=Math.sin(i*2.17+j*1.31)*Math.cos(i*.87-j*1.84)+.55*Math.sin(i*.31+j*.47);
+      const noise=Math.sin(i*127.1+j*311.7)*43758.5453;
+      const n=2*(noise-Math.floor(noise))-.98+.26*Math.sin(i*.14)*Math.cos(j*.17);
       data[q]=248+9*n;data[q+1]=119+66*z+25*n;data[q+2]=42+66*z+16*n;
     }else{
       let rgb=body==='earth'?[71,144,221]:[171,168,158], at=0;
@@ -73,7 +74,7 @@ function globe(ctx,p,r,body,camera,light,pole=Z,prime=[1,0,0],red=false) {
         at=4*(Math.min(tex.height-1,Math.floor(v*tex.height))*tex.width+Math.floor(u*tex.width)%tex.width);
         rgb=tex.data;
       }
-      const k=red?.15+.23*lit:.10+.97*Math.pow(lit,.57);
+      const k=red?.15+.23*lit:(body==='earth'?.14:.09)+1.13*Math.pow(lit,.49);
       const rim=body==='earth'?26*Math.pow(1-z,4)*lit:0;
       data[q]=k*rgb[at]+(red?41:rim*.28);
       data[q+1]=k*rgb[at+1]*(red?.38:1)+rim*.68;
@@ -83,8 +84,11 @@ function globe(ctx,p,r,body,camera,light,pole=Z,prime=[1,0,0],red=false) {
   }
   spriteCtx.putImageData(pixels,0,0);
   ctx.drawImage(sprite,cx-r,cy-r,2*r,2*r);
+  if(body==='sun'){
+    ctx.strokeStyle='#ffe09e';ctx.lineWidth=1.25;ctx.beginPath();ctx.arc(cx,cy,r,0,TAU);ctx.stroke();
+  }
   if(body==='earth'){
-    ctx.strokeStyle='#78bfff55';ctx.lineWidth=1;ctx.beginPath();ctx.arc(cx,cy,r,0,TAU);ctx.stroke();
+    ctx.strokeStyle='#78bfffce';ctx.lineWidth=1;ctx.beginPath();ctx.arc(cx,cy,r,0,TAU);ctx.stroke();
   }
 }
 
@@ -134,63 +138,132 @@ export function phaseDisc(canvas,frame,local=false){
     moonPrime(frame.moon,frame.normal),frame.shadow==='Inside Earth’s umbra');
 }
 
-function cone(ctx,project,base,direction,start,end,len,side,name){
-  const tip=add(base,mul(direction,len));
-  const rim=(p,r)=>[add(p,mul(side,r)),add(p,mul(side,-r))];
-  const [a,b]=rim(base,start),[c,d]=rim(tip,end);
-  line(ctx,[a,c,d,b].map(project),'#f3a66b64',1,[],true,'#d97e4434');
-  if(name){const p=project(add(base,mul(direction,len*.69)));label(ctx,name,[p[0],p[1]+15],'#ffc484');}
+function arrow(ctx,a,b,c){
+  line(ctx,[a,b],c,1.25);
+  const angle=Math.atan2(b[1]-a[1],b[0]-a[0]);
+  line(ctx,[b,[b[0]-7*Math.cos(angle-.45),b[1]-7*Math.sin(angle-.45)]],c);
+  line(ctx,[b,[b[0]-7*Math.cos(angle+.45),b[1]-7*Math.sin(angle+.45)]],c);
 }
 
-function earthCentered(ctx,w,h,camera,zoom,frame,eclipses){
+function earthCentered(ctx,w,h,camera,zoom,frame){
   const toward=unit(mul(frame.earth,-1));
   const horizontal=unit([toward[0],toward[1],0]);
   const side=unit(cross(Z,horizontal));
-  // Align the scene's left-right axis to the Sun; retain ecliptic north.
   const fromWorld=v=>[-dot(v,horizontal),-dot(v,side),v[2]];
-  const m=fromWorld(frame.moon),normal=unit(fromWorld(frame.normal));
-  const localLight=fromWorld(toward), pole=fromWorld(frame.pole),prime=fromWorld(frame.spin);
-  const scale=Math.min(w*.152,h*.27)*zoom;
-  const project=v=>[w*.53+dot(v,camera[0])*scale,h*.51-dot(v,camera[1])*scale,dot(v,camera[2])];
-  const earth=[0,0,0],sun=mul(localLight,2.86),moon=mul(m,1/.00257);
+  const m=fromWorld(frame.moon), normal=unit(fromWorld(frame.normal));
+  const light=fromWorld(toward), pole=fromWorld(frame.pole), prime=fromWorld(frame.spin);
+  const scale=Math.min(w*.153,h*.30)*zoom;
+  const project=v=>[w*.54+dot(v,camera[0])*scale,h*.49-dot(v,camera[1])*scale,dot(v,camera[2])];
+  const earth=[0,0,0],sun=mul(light,2.84),moon=mul(m,1/.00257);
   const node=unit(cross(Z,normal)),other=unit(cross(normal,node));
-  line(ctx,circle(eclipses?1.72:1.48,[1,0,0],[0,1,0]).map(project),'#708dae55',1,[],true,'#35527b22');
-  if(eclipses){
-    for(const y of [-1,-.5,0,.5,1])line(ctx,[project([-1.45,y,0]),project([1.45,y,0])],'#7998c031');
-    line(ctx,circle(1.02,node,other).map(project),'#b2a0f9aa',1.5,[],true,'#9480d321');
-    line(ctx,[project(mul(node,-1.38)),project(mul(node,1.38))],'#ac9aefdf',1,[4,4]);
-    for(const k of [-1,1]){
-      const p=project(mul(node,1.04*k));ctx.fillStyle=color.orbit;ctx.fillRect(p[0]-2,p[1]-2,4,4);
-      label(ctx,'Node',[p[0],p[1]+13],color.orbit);
-    }
-    const sunAway=mul(localLight,-1);
-    const direction=unit(sub(moon,sun));
-    let silhouette=unit(cross(camera[2],sunAway));
-    if(Math.hypot(...silhouette)<.1)silhouette=Z;
-    cone(ctx,project,earth,sunAway,.18,.26,1.32,silhouette,'');
-    cone(ctx,project,earth,sunAway,.18,.06,1.32,silhouette,'Earth shadow');
-    cone(ctx,project,moon,direction,.10,.16,1.15,silhouette,'');
-    cone(ctx,project,moon,direction,.10,0,1.15,silhouette,'');
-  }else{
-    line(ctx,circle(1.02,node,other).map(project),'#8ab8eaad',1.3,[4,4]);
+  line(ctx,circle(1.49,[1,0,0],[0,1,0]).map(project),'#708dae55',1,[],true,'#35527b22');
+  line(ctx,circle(1.01,node,other).map(project),'#8ab8eaad',1.3,[4,4]);
+  const axisA=project([-2.34,0,0]), axisB=project([1.28,0,0]);
+  const breadth=22*zoom;
+  for(const offset of [-breadth,0,breadth]){
+    const a=[axisA[0],axisA[1]+offset],b=[axisB[0],axisB[1]+offset];
+    if(Math.hypot(a[0]-b[0],a[1]-b[1])>35)arrow(ctx,a,b,'#ffcc827e');
   }
-  line(ctx,[project(sun),project(earth)],'#ffc48476',1.2,[5,5]);
-  const bodies=[['sun',sun,.37],['earth',earth,.21],['moon',moon,.118]];
+  label(ctx,'SUNLIGHT',[(axisA[0]*2+axisB[0])/3,(axisA[1]*2+axisB[1])/3-breadth-10],color.sun);
+  const a=project(earth),b=project(moon);
+  line(ctx,[a,b],'#c2e2ff90',1,[3,4]);
+  const bodies=[['sun',sun,.37],['earth',earth,.235],['moon',moon,.138]];
   bodies.sort((a,b)=>project(a[1])[2]-project(b[1])[2]);
-  for(const [b,v,r] of bodies){
-    const p=project(v),radius=Math.max(7,r*scale);
-    const light=b==='moon'?unit(fromWorld(mul(add(frame.earth,frame.moon),-1))):localLight;
-    globe(ctx,p,radius,b,camera,light,b==='earth'?pole:normal,b==='earth'?prime:moonPrime(m,normal),
-      b==='moon'&&frame.shadow==='Inside Earth’s umbra');
+  for(const [body,v,r] of bodies){
+    const p=project(v),radius=Math.max(body==='moon'?8:12,r*scale);
+    globe(ctx,p,radius,body,camera,body==='moon'?unit(fromWorld(mul(add(frame.earth,frame.moon),-1))):light,
+      body==='earth'?pole:normal,body==='earth'?prime:moonPrime(m,normal),
+      body==='moon'&&frame.shadow==='Inside Earth’s umbra');
   }
-  const labels=bodies.map(([b,v,r])=>{const [x,y]=project(v);return {b,x,y:y+Math.max(7,r*scale)+12};}).sort((a,b)=>a.y-b.y);
+  const labels=bodies.map(([body,v,r])=>{
+    const [x,y]=project(v);
+    return {body,x:clamp(x,24,w-24),y:y+Math.max(12,r*scale)+13};
+  }).sort((a,b)=>a.y-b.y);
   for(let i=0;i<labels.length;i++){
-    const entry=labels[i];
-    for(const prev of labels.slice(0,i))if(Math.abs(entry.x-prev.x)<53&&Math.abs(entry.y-prev.y)<14)entry.y=prev.y+15;
-    label(ctx,entry.b[0].toUpperCase()+entry.b.slice(1),[entry.x,entry.y],color[entry.b]);
+    const e=labels[i];
+    for(const prev of labels.slice(0,i))if(Math.abs(e.x-prev.x)<53&&Math.abs(e.y-prev.y)<14)e.y=prev.y+15;
+    label(ctx,e.body.toUpperCase(),[e.x,e.y],color[e.body]);
   }
 }
 
+function eclipseScene(ctx,w,h,frame,mode,sestri) {
+  const y=h*.32, sx=w*.16, ex=w*.73, er=Math.min(27,w*.067), mr=er*.59;
+  const sunlight=unit(mul(frame.earth,-1));
+  const along=dot(unit(frame.moon),sunlight);
+  const signed=(frame.phase+180)%360-180;
+  const lunar=mode==='lunar';
+  const phaseOffset=lunar?(frame.phase-180):signed;
+  const my=y-clamp(frame.latitude*6+phaseOffset*.33,-h*.13,h*.13);
+  const mx=ex-along*w*.29;
+  const sr=Math.min(38,w*.087);
+  const earth=[ex,y],moon=[mx,my],sun=[sx,y];
+  const caster=lunar?earth:moon;
+  const receiver=lunar?moon:earth;
+  const r=lunar?er:mr;
+  const end=Math.max(caster[0]+10,receiver[0]+(lunar?mr:er)+11);
+  const shadowY=caster[1]+(end-caster[0])*(caster[1]-y)/Math.max(45,caster[0]-sx);
+  line(ctx,[[caster[0],caster[1]-r],[end,shadowY-r*1.42],[end,shadowY+r*1.42],[caster[0],caster[1]+r]],'#b990e689',1,[],true,'#9975ca42');
+  line(ctx,[[caster[0],caster[1]-r],[end,shadowY-r*.39],[end,shadowY+r*.39],[caster[0],caster[1]+r]],'#986adb99',1,[],true,'#68459ac2');
+  for(const off of [-13,13])arrow(ctx,[sx+sr+7,y+off],[sx+sr+w*.09,y+off],'#ffd092b0');
+  const basis=[[1,0,0],[0,1,0],Z];
+  globe(ctx,sun,sr,'sun',basis,[-1,0,0]);
+  globe(ctx,earth,er,'earth',basis,[-1,0,0]);
+  globe(ctx,moon,mr,'moon',basis,[-1,0,0],Z,[1,0,0],lunar&&frame.shadow==='Inside Earth’s umbra');
+  label(ctx,'SUN',[sx,y+sr+16],color.sun);
+  label(ctx,'EARTH',[ex,y+er+18],color.earth);
+  label(ctx,'MOON',[clamp(mx,25,w-25),my+(Math.abs(mx-ex)<62?-mr-16:mr+14)],color.moon);
+
+  const by=h*.73, left=w*.12, right=sestri?w*.65:w*.9;
+  line(ctx,[[left,by],[right,by]],'#7ebfff9c',1.3,[5,4]);
+  line(ctx,[[left,by+h*.089],[right,by-h*.089]],'#beabff',2);
+  const node=(left+right)/2;
+  ctx.fillStyle='#ffe2a6';ctx.beginPath();ctx.arc(node,by,4,0,TAU);ctx.fill();
+  label(ctx,'Node',[node,by+17],color.sun);
+  // The marker shows the actual signed ecliptic latitude on the schematic line.
+  const progress=clamp(frame.latitude/6,-1,1);
+  const marker=[node+progress*(right-left)*.47,by-progress*h*.084];
+  ctx.beginPath();ctx.arc(...marker,5,0,TAU);ctx.fillStyle='#f5eeff';ctx.fill();
+  label(ctx,'Moon now',[marker[0],marker[1]+(progress>.25?14:-15)],color.moon);
+  label(ctx,'Lunar orbit',[right-4,by-h*.089-13],'#d0bbff','right');
+  label(ctx,'Earth’s orbital plane',[left,by-11],color.earth,'left');
+  label(ctx,'WHY MOST ALIGNMENTS MISS',[w*.5,h*.53],'#d9e6f7');
+  if(sestri){
+    const inset=Math.min(w*.079,35), center=[w*.84,h*.78];
+    // The apparent disks use actual angular radii and separation at Sestri.
+    globe(ctx,center,inset,'sun',basis,[-1,0,0]);
+    ctx.save();ctx.beginPath();ctx.arc(...center,inset,0,TAU);ctx.clip();
+    ctx.fillStyle='#101326';ctx.beginPath();
+    ctx.arc(center[0]+sestri.x*inset,center[1]-sestri.y*inset,sestri.ratio*inset,0,TAU);ctx.fill();ctx.restore();
+    label(ctx,'FROM SESTRI',[center[0],center[1]+inset+14],color.sun);
+  }
+}
+
+const seasonLabels={mar_equinox:'March equinox',jun_solstice:'June solstice',
+  sep_equinox:'September equinox',dec_solstice:'December solstice'};
+
+function seasonScene(ctx,w,h,camera,zoom,frame,season){
+  if(!season)return;
+  const scale=Math.min(w*.31,h*.33)*zoom;
+  const project=v=>[w*.5+scale*dot(v,camera[0]),h*.49-scale*dot(v,camera[1])];
+  line(ctx,season.orbit.map(project),'#81a5d1a6',1.3);
+  const origin=project([0,0,0]), earth=project(frame.earth);
+  const sunRadius=Math.min(38,w*.077), er=Math.min(26,w*.058);
+  globe(ctx,origin,sunRadius,'sun',camera,[1,0,0]);
+  line(ctx,[origin,earth],'#ffd09085',1,[5,4]);
+  for(const [key,name] of Object.entries(seasonLabels)){
+    const p=project(season.markers[key].earth);
+    ctx.fillStyle='#a7cfff';ctx.beginPath();ctx.arc(...p,4,0,TAU);ctx.fill();
+    const side=p[0]>w*.5;
+    label(ctx,name,[clamp(p[0]+(side?8:-8),94,w-94),p[1]-15],color.earth);
+    const v=season.markers[key].earth;
+    line(ctx,[project(add(v,mul(frame.pole,-.12))),project(add(v,mul(frame.pole,.12)))],'#b9f6e0b5',1.4);
+  }
+  const a=project(add(frame.earth,mul(frame.pole,-.26))),b=project(add(frame.earth,mul(frame.pole,.26)));
+  globe(ctx,earth,er,'earth',camera,unit(mul(frame.earth,-1)),frame.pole,frame.spin);
+  arrow(ctx,a,b,'#a5f0d3');label(ctx,'N',[b[0]+9,b[1]-5],'#a5f0d3');
+  label(ctx,'EARTH',[earth[0],earth[1]+er+13],color.earth);
+  label(ctx,'SUN',[origin[0],origin[1]+sunRadius+13],color.sun);
+}
 function heliocentric(ctx,w,h,camera,zoom,frame,trajectory,gain){
   if(!trajectory)return;
   const scale=Math.min(w/229,h/133)*zoom;
@@ -218,7 +291,7 @@ function heliocentric(ctx,w,h,camera,zoom,frame,trajectory,gain){
   if(Math.hypot(p[0]-q[0],p[1]-q[1])>26)label(ctx,'30 million km',[(p[0]+q[0])/2,(p[1]+q[1])/2-10]);
 }
 
-export function render(canvas,view,camera,frame,trajectory,gain){
+export function render(canvas,view,camera,frame,trajectory,gain,lesson){
   const env=canvasContext(canvas);
   if(!env)return;
   const {ctx,w,h}=env;
@@ -226,7 +299,9 @@ export function render(canvas,view,camera,frame,trajectory,gain){
   if(!frame)return;
   const basis=cameraBasis(camera.az,camera.el);
   if(view==='orbit')heliocentric(ctx,w,h,basis,camera.zoom,frame,trajectory,gain);
-  else earthCentered(ctx,w,h,basis,camera.zoom,frame,view==='eclipse');
+  else if(view==='eclipse')eclipseScene(ctx,w,h,frame,lesson.eclipse,lesson.sestri);
+  else if(view==='seasons')seasonScene(ctx,w,h,basis,camera.zoom,frame,lesson.season);
+  else earthCentered(ctx,w,h,basis,camera.zoom,frame);
 }
 
 export function skyChart(canvas,sky,hours,frame){

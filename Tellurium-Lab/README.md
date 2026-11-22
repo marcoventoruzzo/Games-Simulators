@@ -2,11 +2,13 @@
 
 [Open the public simulator](https://tellurium-lab.mventoruzzo.chatgpt.site/)
 
-Explore the changing geometry of the Sun, Earth, and Moon from 1900 through 2100. Pick a UTC date, play time forward, or scrub the 30-day window. Drag the diagram to rotate it, choose a camera preset, or use the keyboard arrow keys and +/−.
+Explore the changing geometry of the Sun, Earth, and Moon from 1900 through 2100. Pick a UTC date, play time forward, or scrub forward from the selected date. Drag the diagram to rotate it, choose a camera preset, or use the keyboard arrow keys and +/−.
 
-- **Lunar phases** shows the sunlight on the textured Earth and Moon. Jump to any principal phase. Open **Earth view** to compare actual Sun and Moon altitude and compass direction, see their local rise and set times, and scrub a 36-hour observing window. Milan is the default observer. Other presets and custom coordinates are available.
-- **Eclipses** shows the ecliptic, the Moon’s instantaneous orbital plane, the line of nodes, and the Earth and Moon shadow cones. Play through a known event or find the next global solar or lunar eclipse.
+- **Lunar phases** shows the sunlight on the textured Earth and Moon. Playback pauses at all four principal phases with an explanation and a resume button. Jump to any principal phase. Open **Earth view** to compare actual Sun and Moon altitude and compass direction, see their local rise and set times, and scrub a 36-hour observing window. Milan is the default observer. Other presets and custom coordinates are available.
+- **Eclipses** explains solar and lunar shadows and the nodes. Play through the August 12, 2026 partial eclipse as seen in Sestri Levante, or find the next global solar or lunar eclipse.
 - **Around the Sun** compares 72-day paths in the Sun’s frame. Switch between true scale, 10×, and 20× magnification of the Moon’s displacement relative to Earth. The speed readouts always use the unscaled values.
+
+- **Seasons** shows the Earth’s orbit and the orientation of its axis, with real equinox, solstice, perihelion, and aphelion times. The paired daylight bars use the geometric horizon at 45° north and south.
 
 ## Run with Python
 

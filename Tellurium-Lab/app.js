@@ -10,13 +10,24 @@ const names=['New Moon','Waxing Crescent','First Quarter','Waxing Gibbous','Full
 const presets={top:[-Math.PI/2,Math.PI/2],tilt:[-Math.PI/2,.68],edge:[-Math.PI/2,.025]};
 const configs={
   phases:['EARTH-CENTERED','The lunar cycle','Body sizes and distances enlarged for clarity'],
-  eclipse:['EARTH-CENTERED','Orbits, nodes, and shadows','Shadow cones and body sizes are schematic'],
-  orbit:['SUN-CENTERED','Two paths around the Sun','Earth’s path is drawn to scale']
+  eclipse:['ECLIPSE GEOMETRY','How shadows make eclipses','Schematic geometry · body sizes, shadows, and tilt enlarged'],
+  orbit:['SUN-CENTERED','Two paths around the Sun','Earth’s path is drawn to scale'],
+  seasons:['EARTH’S YEAR','One orbit. Two opposite seasons.','Orbit shape to scale · Sun, Earth, and axis enlarged']
 };
 let api, view='phases', selected=clamp(Date.now()), anchor=selected, dayStart=Math.floor(selected/DAY)*DAY;
 let camera={az:presets.tilt[0],el:presets.tilt[1],zoom:1},frame,sky,trajectory,trajectoryKey;
 let latitude=45.4642,longitude=9.19,gain=20,playing=false,timer,busy=false,pending=false,revision=0;
-let eventLabel='', skyKey='', drag=null;
+let eventLabel='', skyKey='', drag=null, playToken=0, checkpoint=null, seasonKey;
+let sestriEvent;
+const lesson={eclipse:'solar',sestri:null,season:null};
+const quarterNotes=[
+  'The lit half faces away from Earth. From here we see almost none of it.',
+  'Sunlight strikes the Moon from the side as seen from Earth. About half the visible disk is lit, and the lit portion is growing.',
+  'The lit half faces Earth. The visible disk is almost fully illuminated.',
+  'We see about half the visible disk lit again. This time the lit portion is shrinking.'
+];
+const seasonNames={mar_equinox:'March equinox',jun_solstice:'June solstice',sep_equinox:'September equinox',
+  dec_solstice:'December solstice',perihelion:'Perihelion',aphelion:'Aphelion'};
 
 function status(message,kind=''){
   $('status').textContent=message;
@@ -50,27 +61,41 @@ async function connect(){
 const guides={
   phases:`
     <div class="guide-card">
-      <div class="phase-summary"><div><span class="eyebrow">MOON PHASE</span><h3 id="phase-name">—</h3></div><canvas class="disc" id="phase-disc" aria-label="Illuminated lunar disk"></canvas></div>
+      <div class="phase-summary"><div><span class="eyebrow">AS SEEN FROM EARTH</span><h3 id="phase-name">—</h3></div><canvas class="disc" id="phase-disc" aria-label="Illuminated lunar disk"></canvas></div>
       <div class="metrics"><div class="metric"><strong id="lit">—</strong>Illuminated</div><div class="metric"><strong id="distance">—</strong>From Earth</div></div>
       <p id="phase-hint"></p>
       <button id="toggle-sky" aria-controls="sky">Open Earth view</button>
     </div>
     <div class="guide-card"><h3>Jump to a phase</h3><p>Find the next occurrence after the selected instant.</p>
       <div class="actions"><button data-event="0">New Moon</button><button data-event="90">First Quarter</button><button data-event="180">Full Moon</button><button data-event="270">Last Quarter</button></div>
-      <details open><summary>Why the shape changes</summary><p>The Sun lights one hemisphere of the Moon. As the Moon orbits Earth, we see more or less of that sunlit half. A full cycle of phases takes about 29.5 days.</p></details>
+      <details open><summary>Why the shape changes</summary><p>Follow the gold arrows from the Sun. They always light the half of the Moon facing the Sun. The dotted blue line marks Earth’s view. Compare the orbit with the disk above to see how much of the lit half faces us.</p></details>
     </div>`,
   eclipse:`
-    <div class="guide-card"><h3>Where the planes cross</h3>
-      <div class="metrics"><div class="metric"><strong id="inclination">—</strong>Instantaneous tilt</div><div class="metric"><strong id="lunar-latitude">—</strong>Lunar latitude</div></div>
-      <p>Blue is the ecliptic. Violet is the Moon’s instantaneous orbital plane. The dashed line joins the two nodes.</p>
-      <p class="callout" id="shadow-state"></p>
-      <div class="actions"><button data-event="solar">Next solar eclipse</button><button data-event="lunar">Next lunar eclipse</button></div>
+    <div class="guide-card"><h3>What goes into shadow?</h3>
+      <div class="actions"><button data-eclipse="solar">Solar eclipse</button><button data-eclipse="lunar">Lunar eclipse</button><button data-eclipse="sestri">Sestri Levante · 2026</button></div>
+      <p id="eclipse-explainer"></p><p class="callout" id="shadow-state"></p>
+      <div class="actions" id="sestri-controls" hidden><button data-local="begin">First contact</button><button data-local="peak">Maximum</button><button data-local="sunset">Sunset</button></div>
       <p id="event-label" role="status"></p>
     </div>
-    <div class="guide-card"><h3>Watch the alignment</h3>
-      <div class="actions"><button data-example="2024-04-08T18:17:19Z">Apr 2024 · Solar</button><button data-example="2025-03-14T06:58:42Z">Mar 2025 · Lunar</button></div>
-      <details open><summary>Why eclipses are rare</summary><p>The lunar orbit is tilted about 5° to the ecliptic. At most new or full moons, the bodies pass above or below the alignment. Near a node, a new Moon can cast its shadow on Earth and a full Moon can enter Earth’s shadow.</p></details>
-      <details><summary>Reading the shadows</summary><p>The inner cone is the umbra, where the Sun is fully blocked. In the penumbra the Sun is partly blocked. The diagram enlarges the cones to show their shape. A solar eclipse can be seen only from the part of Earth inside the Moon’s shadow.</p></details>
+    <div class="guide-card"><h3>Why most months miss</h3>
+      <p>The Moon’s orbital plane is tilted about 5°. The lines in the lower diagram cross at a <strong>node</strong>. A new or full Moon near a node can produce an eclipse.</p>
+      <details open><summary>Two kinds of shadow</summary><p>Dark violet marks the umbra, where the Sun is fully blocked. Light violet marks the penumbra, where the Sun is partly blocked.</p></details>
+      <div class="actions"><button data-event="solar">Find next solar eclipse</button><button data-event="lunar">Find next lunar eclipse</button></div>
+    </div>`,
+  seasons:`
+    <div class="guide-card"><h3>Follow Earth through the year</h3>
+      <div class="actions">${Object.entries(seasonNames).map(([key,name])=>'<button data-season="'+key+'">'+name+'</button>').join('')}</div>
+      <div class="metrics">
+        <div class="metric"><strong id="axis-tilt">—</strong>Axis tilt from orbit normal</div>
+        <div class="metric"><strong id="solar-distance">—</strong>Distance from Sun</div>
+      </div>
+      <p id="season-light" class="callout"></p>
+      <div class="day-bars"><label>45° N <span id="day-n"></span><meter id="north-meter" min="0" max="24"></meter></label>
+        <label>45° S <span id="day-s"></span><meter id="south-meter" min="0" max="24"></meter></label></div>
+    </div>
+    <div class="guide-card"><h3>Why July is warm in the north</h3>
+      <p>The north pole points roughly the same way all year. Around June the Northern Hemisphere tilts toward the Sun. The Sun climbs higher and stays up longer. The Southern Hemisphere gets the opposite.</p>
+      <p>Earth is usually <strong>farthest in early July</strong> and <strong>closest in early January</strong>. The tilt drives the seasons. At an equinox, the Sun is overhead at the equator and day and night are nearly equal.</p>
     </div>`,
   orbit:`
     <div class="guide-card"><h3>Earth and Moon in motion</h3>
@@ -107,11 +132,30 @@ function updateGuide(){
     $('distance').textContent=Math.round(frame.distance).toLocaleString('en-US')+' km';
     $('phase-hint').textContent=hints[i];
     phaseDisc($('phase-disc'),frame,!$('sky').hidden&&!!frame.skyView);
+    if(checkpoint)phaseDisc($('checkpoint-disc'),frame);
   } else if(view==='eclipse'){
-    $('inclination').textContent=frame.tilt.toFixed(2)+'°';
-    $('lunar-latitude').textContent=frame.latitude.toFixed(2)+'°';
-    $('shadow-state').textContent=frame.shadow;
+    const local=lesson.eclipse==='sestri';
+    $('sestri-controls').hidden=!local;
+    $('eclipse-explainer').textContent=local
+      ? 'On August 12, 2026, Sestri saw a deep partial eclipse. The small disk shows the Sun from Sestri as the Moon passes in front.'
+      : lesson.eclipse==='solar'
+        ? 'At new Moon, the Moon can pass between the Sun and Earth. The Moon’s shadow falls on a small part of Earth.'
+        : 'At full Moon, Earth can pass between the Sun and Moon. The Moon darkens as it moves through Earth’s shadow.';
+    for(const b of $('guide').querySelectorAll('[data-eclipse]'))b.setAttribute('aria-pressed',String(b.dataset.eclipse===lesson.eclipse));
+    $('shadow-state').textContent=local&&lesson.sestri&&sestriEvent
+      ? 'Maximum: '+(100*sestriEvent.coverage).toFixed(1)+'% of the Sun covered · '+clock(sestriEvent.peak)+' UTC / 8:22 p.m. local. '+(selected>=Date.parse(sestriEvent.sunset)?'The Sun has set.':'Sun altitude now: '+lesson.sestri.altitude.toFixed(1)+'°.')
+      : frame.shadow==='Shadows miss'?'At this time, the shadows miss.':frame.shadow;
     $('event-label').textContent=eventLabel;
+  } else if(view==='seasons'){
+    $('axis-tilt').textContent=frame.obliquity.toFixed(2)+'°';
+    $('solar-distance').textContent=(frame.solar_distance/1e6).toFixed(1)+' million km';
+    const dec=frame.declination;
+    $('season-light').textContent=Math.abs(dec)<.06?'The midday Sun is directly above the equator.':
+      'The midday Sun is directly overhead at '+Math.abs(dec).toFixed(1)+'° '+(dec>0?'N':'S')+'.';
+    for(const [i,id] of ['north','south'].entries()){
+      $(id+'-meter').value=frame.daylight[i];
+      $(i===0?'day-n':'day-s').textContent=frame.daylight[i].toFixed(1)+' hours of daylight';
+    }
   } else {
     $('earth-speed').textContent=frame.speeds[0].toFixed(2)+' km/s';
     $('moon-speed').textContent=frame.speeds[1].toFixed(2)+' km/s';
@@ -125,20 +169,24 @@ function setCamera(name){
 }
 
 function setView(name){
+  if(view!==name){stop();clearCheckpoint();}
   view=name;
   for(const button of document.querySelectorAll('[data-view]')){
     if(button.dataset.view===name)button.setAttribute('aria-current','page');
     else button.removeAttribute('aria-current');
   }
   if(name!=='phases')$('sky').hidden=true;
+  $('camera-controls').hidden=name==='eclipse';
+  $('zoom-controls').hidden=name==='eclipse';
   if(name==='eclipse')$('speed').selectedIndex=0;
+  else if($('speed').selectedIndex===0)$('speed').selectedIndex=2;
   const [label,title,note]=configs[name];
   $('frame-label').textContent=label;$('scene-title').textContent=title;$('scale-note').textContent=note;
   $('guide').innerHTML=guides[name];
   $('toggle-sky')?.addEventListener('click',()=>setSky($('sky').hidden));
   updateGain();
-  setCamera(name==='orbit'?'top':name==='eclipse'?'edge':'tilt');
-  updateGuide();request();
+  setCamera(name==='orbit'?'top':'tilt');
+  anchor=selected;updateClock();updateGuide();request();
 }
 
 function updateGain(){
@@ -152,19 +200,37 @@ function updateClock(){
   const stamp=iso(selected);
   $('stamp').firstChild.nodeValue=stamp.slice(0,10)+' · '+stamp.slice(11,19)+' ';
   if(document.activeElement!==$('date'))$('date').value=stamp.slice(0,16);
-  $('scrub').value=Math.round((selected-anchor)/HOUR);
-  $('range-start').textContent=short(clamp(anchor-15*DAY));
-  $('range-mid').textContent=short(anchor);
-  $('range-end').textContent=short(clamp(anchor+15*DAY));
+  const span=timelineSpan();
+  $('scrub').max=span;
+  $('scrub').value=Math.round((selected-anchor)/timelineStep());
+  $('range-start').textContent=rangeLabel(anchor);
+  $('range-mid').textContent=rangeLabel(clamp(anchor+span*timelineStep()/2));
+  $('range-end').textContent=rangeLabel(clamp(anchor+span*timelineStep()));
   $('day-scrub').value=Math.round((selected-dayStart)/60000);
   $('sky-start').textContent=short(dayStart)+' 00:00';
   $('sky-end').textContent=short(dayStart+36*HOUR)+' 12:00';
 }
 
-function changeDate(time,reset=false,keepSkyDay=false){
+const timelineStep=()=>view==='eclipse'?60000:view==='seasons'?DAY:HOUR;
+const timelineSpan=()=>view==='eclipse'?240:view==='seasons'?365:744;
+const rangeLabel=t=>view==='eclipse'?short(t).slice(5)+' '+clock(t):short(t);
+
+function clearCheckpoint(){
+  checkpoint=null;
+  $('phase-popup').hidden=true;
+}
+function showCheckpoint(quarter){
+  checkpoint=quarter;
+  $('checkpoint-title').textContent=names[quarter*2];
+  $('checkpoint-note').textContent=quarterNotes[quarter];
+  $('phase-popup').hidden=false;
+  $('resume').focus({preventScroll:true});
+}
+function changeDate(time,reset=false,keepSkyDay=false,keepCheckpoint=false){
   if(!Number.isFinite(time))return;
   selected=clamp(time);
-  if(reset||Math.abs(selected-anchor)>15*DAY)anchor=selected;
+  if(!keepCheckpoint)clearCheckpoint();
+  if(reset||selected<anchor||selected>anchor+timelineSpan()*timelineStep())anchor=selected;
   if(!keepSkyDay&&(reset||selected<dayStart||selected>dayStart+36*HOUR))dayStart=Math.floor(selected/DAY)*DAY;
   updateClock();request();
 }
@@ -182,7 +248,7 @@ function setSky(open){
 }
 
 function draw(){
-  render($('space'),view,camera,frame,trajectory,gain);
+  render($('space'),view,camera,frame,trajectory,gain,lesson);
   if(!$('sky').hidden&&frame?.sunSky){
     skyChart($('sky-canvas'),sky,(selected-dayStart)/HOUR,frame);
     skyDome($('sky-dome'),sky,frame);
@@ -231,6 +297,13 @@ async function refresh(){
           trajectoryKey=key;
         }
       }
+      if(currentView==='seasons'){
+        const year=new Date(time).getUTCFullYear();
+        if(year!==seasonKey){lesson.season=await api('season',[year]);seasonKey=year;}
+      }
+      if(currentView==='eclipse'){
+        lesson.sestri=lesson.eclipse==='sestri'&&short(time)==='2026-08-12'?await api('sestri_sky',[iso(time)]):null;
+      }
       if(r===revision){
         frame=result;
         status('● EPHEMERIS READY','ready');
@@ -245,19 +318,53 @@ async function refresh(){
 
 function stop(){
   if(timer)clearInterval(timer);
+  playToken++;
   playing=false;$('play').textContent='▶';$('play').setAttribute('aria-label','Play');$('play').setAttribute('aria-pressed','false');
 }
-function togglePlay(){
+async function togglePlay(){
   if(playing){stop();return;}
+  if(!api||selected>=MAX)return;
+  clearCheckpoint();
+  const token=++playToken;
   playing=true;$('play').textContent='Ⅱ';$('play').setAttribute('aria-label','Pause');$('play').setAttribute('aria-pressed','true');
+  let next=null;
+  try{
+    if(view==='phases')next=await api('quarter',[iso(selected+1000)]);
+  }catch(error){
+    if(token===playToken){stop();status('Could not find the next phase','error');}
+    return;
+  }
+  if(token!==playToken)return;
+  const pauseAt=next?Date.parse(next.date):Infinity;
   let last=performance.now();
   timer=setInterval(()=>{
     if(busy){last=performance.now();return;}
     const now=performance.now();
-    changeDate(selected+(now-last)*DAY*Number($('speed').value)/1000);
+    const candidate=selected+(now-last)*DAY*Number($('speed').value)/1000;
     last=now;
+    if(candidate>=pauseAt&&pauseAt<=MAX){
+      stop();showCheckpoint(next.quarter);changeDate(pauseAt,false,false,true);return;
+    }
+    changeDate(candidate);
     if(selected>=MAX)stop();
   },75);
+}
+
+async function eclipseExample(mode){
+  if(!api)return;
+  stop();
+  lesson.eclipse=mode;
+  if(mode==='sestri'){
+    sestriEvent??=await api('sestri_event',[]);
+    if(view!=='eclipse'||lesson.eclipse!==mode)return;
+    eventLabel='Sestri Levante · August 12, 2026';
+    changeDate(Date.parse(sestriEvent.begin),true);
+  }else{
+    const solar=mode==='solar';
+    const date=Date.parse(solar?'2024-04-08T18:17:19Z':'2025-03-14T06:58:42Z');
+    eventLabel=solar?'April 8, 2024 · Total solar eclipse':'March 14, 2025 · Total lunar eclipse';
+    changeDate(date,true);
+  }
 }
 
 async function jump(kind){
@@ -270,8 +377,14 @@ async function jump(kind){
     if(!hit.date||Date.parse(hit.date)>MAX){
       status('Next event is beyond 2100','error');return;
     }
-    if(hit.kind)eventLabel=hit.kind+' '+hit.family+' eclipse · '+short(Date.parse(hit.date))+' '+clock(hit.date)+' UTC';
-    changeDate(Date.parse(hit.date),true);
+    if(hit.kind){
+      lesson.eclipse=hit.family;
+      eventLabel=hit.kind+' '+hit.family+' eclipse · '+short(Date.parse(hit.date))+' '+clock(hit.date)+' UTC';
+    }
+    if(view==='phases'){
+      showCheckpoint(Number(kind)/90);
+      changeDate(Date.parse(hit.date),true,false,true);
+    }else changeDate(Date.parse(hit.date),true);
   }catch(error){console.error(error);status('Event search failed','error');}
 }
 
@@ -293,23 +406,27 @@ $('guide').addEventListener('click',event=>{
   const b=event.target.closest('button');
   if(!b)return;
   if(b.dataset.event)void jump(b.dataset.event);
-  if(b.dataset.example){
-    stop();eventLabel=b.dataset.example.startsWith('2024')?'Total solar eclipse · 2024-04-08 18:17 UTC':
-      'Total lunar eclipse · 2025-03-14 06:58 UTC';
-    changeDate(Date.parse(b.dataset.example),true);
+  if(b.dataset.eclipse)void eclipseExample(b.dataset.eclipse).catch(error=>{console.error(error);status('Eclipse example unavailable','error');});
+  if(b.dataset.local&&sestriEvent){
+    stop();const start=Date.parse(sestriEvent.begin);
+    changeDate(Date.parse(sestriEvent[b.dataset.local]));
+    anchor=start;updateClock();
+  }
+  if(b.dataset.season&&lesson.season?.markers[b.dataset.season]){
+    stop();changeDate(Date.parse(lesson.season.markers[b.dataset.season].date),true);
   }
   if(b.dataset.gain){gain=+b.dataset.gain;updateGain();draw();}
 });
 $('play').onclick=togglePlay;
-$('back').onclick=()=>{stop();changeDate(selected-DAY);};
-$('forward').onclick=()=>{stop();changeDate(selected+DAY);};
+$('resume').onclick=()=>{$('play').focus({preventScroll:true});void togglePlay();};
+$('forward').onclick=()=>{stop();changeDate(selected+(view==='eclipse'?5*60000:DAY));};
 $('today').onclick=()=>{stop();eventLabel='';changeDate(Date.now(),true);};
 $('date').onchange=()=>{
   const time=Date.parse($('date').value+'Z');
   if($('date').validity.valid&&Number.isFinite(time)){stop();eventLabel='';changeDate(time,true);}
   else status('Choose a date from 1900 to 2100','error');
 };
-$('scrub').oninput=()=>{stop();changeDate(anchor+Number($('scrub').value)*HOUR);};
+$('scrub').oninput=()=>{stop();changeDate(anchor+Number($('scrub').value)*timelineStep());};
 $('hide-sky').onclick=()=>{setSky(false);$('toggle-sky')?.focus();};
 $('place').onchange=updateObserver;
 $('lat').onchange=updateObserver;
