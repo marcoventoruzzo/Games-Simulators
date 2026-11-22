@@ -10,8 +10,9 @@ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const color={sun:'#ffc484',earth:'#8bbcff',moon:'#e2e9f4',orbit:'#b2a0f9'};
 const textures={};
 
-export async function loadTextures() {
-  await Promise.allSettled(['earth','moon'].map(async body=>{
+let textureLoad;
+export function loadTextures() {
+  return textureLoad??=Promise.allSettled(['earth','moon'].map(async body=>{
     const im=new Image();
     im.src=new URL('assets/'+body+'.webp',import.meta.url);
     await im.decode();
@@ -99,6 +100,22 @@ function globe(ctx,p,r,body,camera,light,pole=Z,prime=[1,0,0],red=false) {
   if(body==='earth'){
     ctx.strokeStyle='#78bfffce';ctx.lineWidth=1;ctx.beginPath();ctx.arc(cx,cy,r,0,TAU);ctx.stroke();
   }
+}
+
+const atlasSprites=new Map();
+
+export function atlasGlobe(ctx,x,y,r,body){
+  const texture=textures[body];
+  let entry=atlasSprites.get(body);
+  if(!entry||entry.texture!==texture){
+    const [lon,lat]=body==='earth'?[9.19*Math.PI/180,45.4642*Math.PI/180]:[0,0];
+    const front=[Math.cos(lon)*Math.cos(lat),Math.sin(lon)*Math.cos(lat),Math.sin(lat)];
+    const east=[-Math.sin(lon),Math.cos(lon),0];
+    const light=unit(add(front,mul(east,-.42)));
+    entry={texture,sprite:makeGlobeSprite(body,[east,cross(front,east),front],light,Z,[1,0,0],false)};
+    atlasSprites.set(body,entry);
+  }
+  ctx.drawImage(entry.sprite,x-r,y-r,r*2,r*2);
 }
 
 let earthSprite, earthTexture;

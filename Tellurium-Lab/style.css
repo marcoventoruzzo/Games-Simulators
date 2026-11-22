@@ -162,3 +162,17 @@ nav{flex-wrap:wrap}
 .astro-magazine dd{margin:0}
 .astro-magazine small{display:block;margin-top:6px;color:var(--faint)}
 .astro-lab canvas[data-precession]{height:clamp(290px,35vw,370px)}
+.explorer canvas{height:clamp(255px,52vw,520px)}
+.explorer:has([data-clock]) canvas{height:clamp(320px,75vw,620px)}
+.explorer:has([data-scale]) canvas{height:clamp(230px,29vw,330px)}
+.explore-caption{min-height:119px;padding:10px 0}
+.explore-caption h3{margin:0}
+.explore-caption strong,.explorer-key .key-planets{color:var(--gold)}
+.explorer-key{display:flex;gap:12px;flex-wrap:wrap}
+.explorer-key .key-ecliptic{color:#e6c49b}
+.explorer-key .key-deep{color:#a4e3d2}
+.scale-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,155px),1fr));gap:8px}
+.scale-cards details{padding:9px;border:1px solid var(--line);border-radius:8px;background:#132038}
+.scale-cards p{margin:6px 0 0;font-size:.86rem}
+.scale-sun span{display:inline-block;vertical-align:middle;font-size:2rem;margin-right:7px}
+.sky-targets button{white-space:normal;text-align:left}

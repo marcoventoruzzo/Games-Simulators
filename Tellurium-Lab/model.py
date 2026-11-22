@@ -412,3 +412,62 @@ def monthly_transits(start, end):
 
 
 OPERATIONS['monthly_transits'] = monthly_transits
+
+
+# Selected J2000 positions (right ascension in hours, declination in degrees).
+SKY_FIGURES = {
+    'Orion': [('Betelgeuse',5.9195,7.407),('Bellatrix',5.4189,6.350),('Mintaka',5.5334,-.299),('Alnilam',5.6036,-1.202),('Alnitak',5.6793,-1.943),('Saiph',5.7959,-9.670),('Rigel',5.2423,-8.202),('Mintaka',5.5334,-.299)],
+    'Ursa Major': [('Dubhe',11.062,61.75),('Merak',11.031,56.38),('Phecda',11.897,53.69),('Megrez',12.257,57.03),('Alioth',12.900,55.96),('Mizar',13.399,54.93),('Alkaid',13.792,49.31)],
+    'Cassiopeia': [('Caph',.153,59.15),('Schedar',.675,56.54),('Gamma Cas',.945,60.72),('Ruchbah',1.430,60.24),('Segin',1.907,63.67)],
+    'Leo': [('Regulus',10.1395,11.967),('Algieba',10.3329,19.842),('Adhafera',10.278,23.42),('Rasalas',9.879,26.01),('Denebola',11.8177,14.572)],
+    'Scorpius': [('Dschubba',16.006,-22.62),('Antares',16.490,-26.432),('Tau Sco',16.598,-28.21),('Epsilon Sco',16.836,-34.29),('Shaula',17.560,-37.104),('Lesath',17.512,-37.30)],
+    'Crux': [('Acrux',12.443,-63.099),('Gacrux',12.519,-57.113),('Mimosa',12.795,-59.689),('Delta Cru',12.252,-58.749)],
+    'Cygnus': [('Deneb',20.6905,45.28),('Sadr',20.3705,40.257),('Albireo',19.512,27.96),('Gienah',20.770,33.97),('Sadr',20.3705,40.257),('Delta Cyg',19.750,45.13)],
+    'Pegasus': [('Markab',23.079,15.21),('Scheat',23.063,28.08),('Alpheratz',.140,29.09),('Algenib',.220,15.18),('Markab',23.079,15.21)],
+    'Gemini': [('Pollux',7.755,28.026),('Castor',7.577,31.889),('Mebsuta',6.732,25.13),('Tejat',6.383,22.514),('Alhena',6.629,16.399),('Pollux',7.755,28.026)],
+    'Taurus': [('Elnath',5.438,28.61),('Ain',4.477,19.18),('Aldebaran',4.599,16.509),('Zeta Tau',5.627,21.14)],
+    'Carina': [('Canopus',6.399,-52.696),('Miaplacidus',9.220,-69.717),('Avior',8.375,-59.51),('Aspidiske',9.285,-59.275)],
+}
+SKY_STARS = [('Sirius',6.7525,-16.716),('Polaris',2.5303,89.264),('Arcturus',14.261,19.182),
+             ('Vega',18.6156,38.784),('Altair',19.8464,8.868),('Spica',13.420,-11.161),
+             ('Fomalhaut',22.961,-29.622),('Achernar',1.6286,-57.237),
+             ('Alpha Centauri',14.660,-60.834),('Procyon',7.655,5.225)]
+DEEP_SKY = [
+    ('Andromeda Galaxy · M31','Galaxy',.7123,41.269),('Orion Nebula · M42','Nebula',5.588,-5.391),
+    ('Pleiades · M45','Open cluster',3.79,24.117),('Carina Nebula','Nebula',10.75,-59.87),
+    ('Omega Centauri','Globular cluster',13.447,-47.479),('Large Magellanic Cloud','Galaxy',5.39,-69.76),
+    ('Small Magellanic Cloud','Galaxy',.88,-72.8),('Lagoon Nebula · M8','Nebula',18.061,-24.386),
+    ('Hercules Cluster · M13','Globular cluster',16.695,36.461),('Double Cluster','Open cluster',2.35,57.13),
+    ('Triangulum Galaxy · M33','Galaxy',1.564,30.66),('Southern Pleiades','Open cluster',10.72,-64.4),
+]
+
+
+@lru_cache(maxsize=32)
+def mini_stellarium(date, lat, lon):
+    t = ae.Time(date)
+    observer = ae.Observer(lat, lon, 0)
+    rotation = ae.Rotation_EQJ_EQD(t)
+    def star(ra, dec):
+        v = ae.VectorFromSphere(ae.Spherical(dec, ra*15, 1), t)
+        eq = ae.EquatorFromVector(ae.RotateVector(rotation, v))
+        h = ae.Horizon(t, observer, eq.ra, eq.dec, ae.Refraction.Airless)
+        return [h.azimuth, h.altitude]
+    tilt = ae.Rotation_ECT_EQD(t)
+    ecliptic_points = []
+    for angle in range(0, 361, 2):
+        a = radians(angle)
+        eq = ae.EquatorFromVector(ae.RotateVector(tilt, ae.Vector(cos(a), sin(a), 0, t)))
+        h = ae.Horizon(t, observer, eq.ra, eq.dec, ae.Refraction.Airless)
+        ecliptic_points.append([h.azimuth, h.altitude])
+    planets = (ae.Body.Mercury, ae.Body.Venus, ae.Body.Mars, ae.Body.Jupiter,
+               ae.Body.Saturn, ae.Body.Uranus, ae.Body.Neptune)
+    return dict(figures=[[name, [[n, *star(ra, dec)] for n, ra, dec in group]]
+                         for name, group in SKY_FIGURES.items()],
+                stars=[[name, *star(ra, dec)] for name, ra, dec in SKY_STARS],
+                deep=[[name, kind, *star(ra, dec)] for name, kind, ra, dec in DEEP_SKY],
+                planets=[[body.name, *horizontal(body, t, observer)] for body in planets],
+                ecliptic=ecliptic_points, sun=horizontal(SUN, t, observer)[1],
+                moon=horizontal(MOON, t, observer))
+
+
+OPERATIONS['mini_stellarium'] = mini_stellarium
