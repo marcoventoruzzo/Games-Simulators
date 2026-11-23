@@ -230,6 +230,7 @@ export function mountStarNavigation(root){
   root.innerHTML=`<div class="lab-stack field-lab">
     <article class="lab-card"><h2>Navigation with the Stars</h2>
       <h3>1 · Measure the Sun by day</h3>
+      <figure class="instrument-photo"><img src="assets/history/sextant.webp" alt="A historical sextant with sight, pivoting arm and graduated arc" loading="lazy"><figcaption>Look at the horizon through the sight. Move the arm until the reflected object meets the horizon, then read its altitude on the scale. <a href="https://americanhistory.si.edu/collections/object/nmah_1057781">Photo: Smithsonian</a></figcaption></figure>
       <div class="field-columns"><div><div data-day-sight></div><label>Practice the sight <input data-day-angle type="range" min="0" max="90" step=".5" value="24"></label><output class="lab-readout" data-day-output></output></div>
       <div><p>A sextant sees the horizon directly and brings an image of the Sun down to it through two mirrors. The calibrated scale gives the angle between them. In practice, navigators use the bottom edge of the Sun, called the lower limb, and apply instrument, horizon dip, refraction, and solar-disk corrections.</p>
       <p><strong>For a real Sun sight, use only an instrument with proper solar shades and follow its manual. Never look at the Sun through unfiltered optics.</strong> The exercise here uses a simulated image.</p>

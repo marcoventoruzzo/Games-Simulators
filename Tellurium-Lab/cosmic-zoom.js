@@ -95,9 +95,9 @@ export function mountCosmicZoom(root){
     <div class="journey-controls"><button type="button" data-flight-play>Play zoom</button><div class="journey-ticks"><button type="button" data-go="1">Earth</button><button type="button" data-go="4">Solar System</button><button type="button" data-go="7">Milky Way</button><button type="button" data-go="10">Observable universe</button></div></div>
     <p class="flight-note" data-flight-note></p>
     <p class="fine">The ruler measures the width of this view. Local landmarks, orbit orientations, spiral arms and cosmic structure are schematic. Tiny objects use enlarged markers so you can keep track of them.</p>
-    <section class="cosmic-expansion"><h3>Why is it 92 billion light-years across?</h3>
+    <section class="cosmic-expansion"><h3>Why is the observable universe about 92 billion light-years across?</h3>
       <p>If space had stayed the same size for 13.8 billion years, light could have traveled at most 13.8 billion light-years toward us from any direction. The observable diameter would be about 27.6 billion light-years.</p>
-      <p>Space expanded while the light was traveling. The regions at the edge of what we can observe are now about 46 billion light-years away. Double that for the diameter. The horizon marks how far we can see; there may be much more universe beyond it.</p>
+      <p>Space expanded while the light was traveling. The regions at the edge of what we can observe are now about 46 billion light-years away. Double that for the estimated present-day diameter of the observable universe. The size of the whole universe is unknown.</p>
       <div class="cosmic-elastic"><div aria-hidden="true"><span></span><span></span></div><label>Stretch the elastic <input type="range" min="0" max="100" value="0" data-stretch></label></div>
       <p>Two dots on an elastic get farther apart when you stretch it. Here they stand for galaxies held together by gravity. The space between distant galaxies expands while the stars inside each galaxy remain bound.</p>
       <p><a href="https://www.nasa.gov/science-research/astrophysics/how-big-is-space-we-asked-a-nasa-expert-episode-61/">NASA · How big is space?</a></p>
@@ -107,7 +107,8 @@ export function mountCosmicZoom(root){
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const galaxy=milkyWayPoints(),filaments=webPoints();
   const min=+slider.min,max=+slider.max;
-  let z=min,frame=0,chapter=-1,closed=false;
+  const checkpoints=[4,7,10].map(i=>Math.log10(stops[i][1]));
+  let z=min,frame=0,chapter=-1,closed=false,paused=false;
 
   function draw(){
     const env=canvasContext(canvas);if(!env)return;
@@ -117,7 +118,7 @@ export function mountCosmicZoom(root){
     const scene=stops.findLastIndex(([,km])=>km<=span*1.15);
     const index=Math.max(0,scene);
     if(chapter!==index){chapter=index;title.textContent=stops[index][0];note.textContent=stops[index][2]}
-    const bar=barDistance(viewWidth);
+    const bar=z>=max-1e-8?50e9*LY:barDistance(viewWidth);
     ruler.style.width=(bar/viewWidth*100)+'%';length.textContent=distance(bar);
     width.textContent='View width · '+distance(viewWidth);
     slider.setAttribute('aria-valuetext',distance(viewWidth)+' across · '+stops[index][0]);
@@ -220,18 +221,31 @@ export function mountCosmicZoom(root){
       if(horizon<w*.49&&horizon<h*.58)label(c,'Observable horizon',cx,Math.max(19,cy-horizon-9),'#a7c8ff','center');
       spot(c,cx,cy,2.7,'#ffe0a1');label(c,'Milky Way · our viewpoint',cx+8,cy-9,'#ffe0a1');
     }
+    const measurement=checkpoints.findIndex(point=>Math.abs(point-z)<1e-8);
+    if(measurement>=0){
+      const [center,radius,name]=[
+        [0,30.05*AU,'Solar System · 60.1 AU across Neptune’s orbit'],
+        [26000*LY,50000*LY,'Milky Way · about 100,000 ly'],
+        [0,observable,'Observable diameter · about 92 billion ly']
+      ][measurement];
+      const [left]=at(center-radius,0),[right]=at(center+radius,0),by=cy+Math.min(34,h*.1);
+      c.beginPath();c.moveTo(left,by-8);c.lineTo(left,by+8);c.moveTo(left,by);c.lineTo(right,by);
+      c.moveTo(right,by-8);c.lineTo(right,by+8);c.strokeStyle='#ffd18e';c.lineWidth=1.8;c.stroke();
+      label(c,name,(left+right)/2,by+21,'#ffe2ab','center');
+    }
+
   }
   function render(value){z=cap(value,min,max);slider.value=String(z);draw()}
-  function stop(){cancelAnimationFrame(frame);frame=0;play.textContent='Play zoom'}
-  function go(target,duration){
-    stop();
-    if(reduced.matches){render(target);return}
+  function stop(){cancelAnimationFrame(frame);frame=0;play.textContent=paused?'Continue zoom':'Play zoom'}
+  function go(target,duration,checkpoint=false){
+    paused=false;stop();
+    if(reduced.matches){render(target);paused=checkpoint;stop();return}
     const from=z,start=performance.now();
     play.textContent='Pause';
     function tick(now){
       const t=cap((now-start)/duration,0,1), easing=t<1?t*t*(3-2*t):1;
       render(lerp(from,target,easing));
-      if(t<1)frame=requestAnimationFrame(tick);else stop();
+      if(t<1)frame=requestAnimationFrame(tick);else{paused=checkpoint;stop();}
     }
     frame=requestAnimationFrame(tick);
   }
@@ -240,7 +254,12 @@ export function mountCosmicZoom(root){
     const step={ArrowRight:.08,ArrowUp:.08,ArrowLeft:-.08,ArrowDown:-.08}[event.key];
     if(step){event.preventDefault();stop();render(z+step)}
   };
-  play.onclick=()=>{if(frame){stop();return}if(z>=max-.001)render(min);go(max,Math.max(2500,26000*(max-z)/(max-min)))};
+  play.onclick=()=>{
+    if(frame){paused=true;stop();return}
+    if(z>=max-.001)render(min);
+    const next=checkpoints.find(point=>point>z+1e-7)??max;
+    go(next,Math.max(900,26000*(next-z)/(max-min)),next<max-1e-7);
+  };
   for(const button of root.querySelectorAll('[data-go]'))button.onclick=()=>go(Math.log10(stops[+button.dataset.go][1]),1300);
   q('[data-stretch]').oninput=event=>q('.cosmic-elastic>div').style.width=(34+.64*Number(event.target.value))+'%';
   const resize=new ResizeObserver(draw);resize.observe(canvas);render(min);

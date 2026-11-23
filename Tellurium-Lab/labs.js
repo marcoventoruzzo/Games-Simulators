@@ -1,3 +1,4 @@
+import {mountAstronomyHistory,mountBigBang} from './astronomy-history.js';
 import {mountMeridian,mountStarNavigation} from './field-astronomy.js';
 import {mountCosmicZoom,mountMiniStellarium,mountSolarScale} from './exploration.js';
 import {mountAstrology} from './astrology.js';
@@ -588,6 +589,7 @@ function measureLab(root){
     out('chem-read')+canvas('chemical','Laboratory spectral fingerprint compared with stellar absorption or gas emission')+
     '<h3>Inside a slit spectrograph</h3><p>The telescope focuses starlight onto a slit. A collimator makes the beam parallel. A diffraction grating sends different wavelengths in different directions. Camera optics focus them onto different pixels of a detector.</p>'+
     canvas('instrument','Optical layout of a slit spectrograph with collimator, transmission grating, camera and detector')+
+    '<figure class="instrument-photo"><img src="assets/history/harps.webp" alt="The open vacuum tank of the HARPS spectrograph, showing its optical components" loading="lazy"><figcaption>HARPS, a working astronomical spectrograph at La Silla. The photo shows its open vacuum chamber during testing. <a href="https://eso.org/public/images/eso0308b/">Photo: ESO</a></figcaption></figure>'+
     '<details><summary>What line strengths tell us</summary><p>Abundances come from fitting line strengths and profiles with model atmospheres. Temperature, ionization, density and blends affect the lines. Astronomers also correct for Doppler shifts before matching wavelengths.</p></details>')+'</div>';
   return attach(root,()=>{
     const d=+$(root,'distance').value;
@@ -814,7 +816,7 @@ function galileoLab(root){
     return `<circle cx="${x}" cy="${y}" r="${i%10===0?1.7:.7}" fill="#e3eaff" opacity="${i%4*.16+.3}"/>`;
   }).join('');
   root.innerHTML=`<div class="lab-stack">
-    <article class="lab-card"><h2>Galileo and the Starry Messenger</h2>
+    <article class="lab-card"><figure class="galileo-portrait"><img src="assets/history/portrait.webp" alt="Galileo Galilei drawn after the portrait by Justus Sustermans"><figcaption>After Justus Sustermans</figcaption></figure><h2>Galileo and the Starry Messenger</h2>
     <p>In 1609 Galileo built and improved telescopes after hearing about a Dutch spyglass. He turned them on the sky. In March 1610 he published <cite>Sidereus Nuncius</cite> in Venice, describing what he saw and what he inferred from it.</p>
     <div class="galileo-plates">
       <section><h3>Mountains on the Moon</h3>
@@ -858,7 +860,7 @@ function galileoLab(root){
   return ()=>{};
 }
 
-const labs={analemma,meridian:mountMeridian,navigation:mountStarNavigation,sky:skyLab,stars:starLab,birth:mountBirth,doppler:dopplerLab,dark:darkLab,measure:measureLab,'light-speed':lightSpeedLab,'black-hole':mountBlackHole,planets:mountPlanets,retrograde:retrogradeLab,'cosmic-zoom':mountCosmicZoom,'mini-stellarium':mountMiniStellarium,'solar-scale':mountSolarScale,galileo:galileoLab,astrology:mountAstrology};
+const labs={analemma,meridian:mountMeridian,navigation:mountStarNavigation,sky:skyLab,stars:starLab,birth:mountBirth,doppler:dopplerLab,dark:darkLab,measure:measureLab,'light-speed':lightSpeedLab,'black-hole':mountBlackHole,planets:mountPlanets,retrograde:retrogradeLab,'cosmic-zoom':mountCosmicZoom,'mini-stellarium':mountMiniStellarium,'solar-scale':mountSolarScale,galileo:galileoLab,'history-astro':mountAstronomyHistory,'big-bang':mountBigBang,astrology:mountAstrology};
 export function mountLab(root,key,api,year){
   return labs[key](root,api,year);
 }

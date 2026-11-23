@@ -218,4 +218,11 @@ const fusionVideo=`<article class="lab-card">
     src="https://www.youtube-nocookie.com/embed/XqGLec4Ms0M?hl=en&amp;cc_lang_pref=en&amp;playsinline=1"
     loading="lazy" referrerpolicy="strict-origin-when-cross-origin"
     allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
+</article>
+<article class="lab-card">
+  <h2>How the Sun will die</h2>
+  <iframe class="fusion-video" title="How the Sun will die"
+    src="https://www.youtube-nocookie.com/embed/p24SQlhJVZo?hl=en&amp;cc_lang_pref=en&amp;playsinline=1"
+    loading="lazy" referrerpolicy="strict-origin-when-cross-origin"
+    allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
 </article>`;
