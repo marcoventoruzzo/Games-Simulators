@@ -118,13 +118,13 @@ nav{flex-wrap:wrap}
 .planet-swatch{display:block;width:27px;height:27px;margin:2px auto 7px;border-radius:50%;background:radial-gradient(circle at 30% 24%,#ffffffc0,var(--planet) 41%,#182137)}
 .planet-laws h3{margin-top:16px;color:var(--gold)}
 .astro-views{align-items:start;grid-template-columns:1fr 1fr}
-.astro-views canvas[data-ground]{touch-action:none;cursor:grab}
-.astro-views canvas[data-ground]:active{cursor:grabbing}
+.astro-views canvas:is([data-ground],[data-transit-ground]){touch-action:none;cursor:grab}
+.astro-views canvas:is([data-ground],[data-transit-ground]):active{cursor:grabbing}
 .astro-meanings summary{font-size:1.15rem;font-weight:700}
 .astro-meanings dl{display:grid;grid-template-columns:minmax(8em,auto) 1fr;gap:8px 15px}
 .astro-meanings dd{margin:0;color:var(--faint)}
 .astro-meanings dt{font-weight:650}
-@media(max-width:710px){.astro-views{grid-template-columns:1fr}}
+@media(max-width:710px){.astro-views{grid-template-columns:minmax(0,1fr)}}
 
 .kepler-graph{display:block;max-width:730px;width:100%;margin:10px auto;background:#090f1b;border-radius:8px}.kepler-graph text{fill:var(--ink);font:11px system-ui}
 .astro-lab canvas[data-precession]{height:clamp(215px,31vw,310px)}

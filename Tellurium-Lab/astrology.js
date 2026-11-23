@@ -110,40 +110,61 @@ const transitPrompts={
   Neptune:'Give imagination some room and check what you are assuming'
 };
 
+const signVoices=[
+  ['getting things started','something you can do right away','get straight to the point'],
+  ['building something that lasts','a familiar routine','take your time before joining in'],
+  ['following an idea wherever it leads','a good conversation','break the ice with a question'],
+  ['looking after the people you love','a place that feels like home','look for a familiar face'],
+  ['putting your own stamp on things','a little warmth and appreciation','bring some energy into the room'],
+  ['making things work a little better','a small, practical task','notice what needs doing'],
+  ['finding a fair way forward','a chance to talk things through','listen for common ground'],
+  ['getting to the bottom of things','privacy and someone you trust','watch the room before opening up'],
+  ['seeing what lies beyond the familiar','a change of scene','look for the interesting story'],
+  ['taking on something worth the effort','a plan you can count on','get a sense of how things work'],
+  ['trying an idea others haven’t considered','room to think for yourself','look at things from a different angle'],
+  ['giving imagination a place in everyday life','some quiet and a little space to daydream','pick up on the mood around you']
+];
+
 function natalReading(chart,house){
   const [,sun]=chart.points[0], [,moon]=chart.points[1];
   const asc=chart.ascendant,dsc=wrap(asc+180);
-  const style=lon=>signMeanings[signIndex(lon)].toLowerCase();
-  const where=lon=>houseExamples[house(lon)-1];
-  const inner=chart.points.filter(([name])=>['Mercury','Venus','Mars'].includes(name));
-  const choices={Mercury:'when you explain an idea or make a decision',Venus:'when you show affection or decide what is worth keeping',Mars:'when you pursue something or have to stand your ground'};
-  return `<p><strong>What matters to you.</strong> An astrologer would start with your <strong>${signName(sun)} Sun</strong>. The Sun is read as the part of you that wants to develop a sense of purpose. Your Sun sign suggests a style that is ${style(sun)}. Its house (number ${house(sun)}) suggests that this might be especially evident in ${where(sun)}.</p>
-    <p><strong>What feels familiar.</strong> Your <strong>${signName(moon)} Moon</strong> is read as your instinctive response, especially when you are tired or under pressure. The sign suggests a response that is ${style(moon)}. The house (number ${house(moon)}) directs the astrologer’s attention to ${where(moon)}. The Sun and Moon describe different sides of the same person. One is about what you want to become, and the other is about what helps you feel at home.</p>
-    <p><strong>How you meet people.</strong> Your <strong>${signName(asc)} Ascendant</strong> suggests an initial approach that is ${style(asc)}. With ${signName(dsc)} on the Descendant, an astrologer might also ask whether you value a partner who is ${style(dsc)}. Read together, these two points raise a question about how your first response to new people fits with what you want from close relationships.</p>
-    <p><strong>How this might play out day to day.</strong> ${inner.map(([name,lon])=>`With <strong>${name} in ${signName(lon)}</strong>, an astrologer would look for a style that is ${style(lon)} ${choices[name]}. The house points to ${where(lon)}.`).join(' ')}</p>
-    <p class="fine">This is a symbolic reading of the placements in your chart, using Western tropical signs and equal houses.</p>`;
+  const [purpose]=signVoices[signIndex(sun)];
+  const comfort=signVoices[signIndex(moon)][1];
+  const firstImpression=signVoices[signIndex(asc)][2];
+  const partnership=signVoices[signIndex(dsc)][1];
+  const sameHouse=house(sun)===house(moon);
+  const comparison=sameHouse
+    ? 'In this chart, the same part of life carries both ambitions and feelings.'
+    : 'Those needs can pull your attention to different parts of life. Both have a place in the picture.';
+  const inner=Object.fromEntries(chart.points);
+  return `<p>A <strong>${signName(sun)} Sun</strong> finds purpose in ${purpose}. In your chart that theme comes out in ${houseExamples[house(sun)-1]}.</p>
+    <p>On a long day, your <strong>${signName(moon)} Moon</strong> points to ${comfort} as a way to feel more like yourself. ${sameHouse?'':`Its house brings in ${houseExamples[house(moon)-1]}.`} ${comparison}</p>
+    <p>Walk into a room full of strangers and the <strong>${signName(asc)} Ascendant</strong> sets the scene: you might ${firstImpression}. Once you know someone well, the opposite point, the ${signName(dsc)} Descendant, asks what it would mean to share ${partnership} with them.</p>
+    <p>There’s another layer in everyday life. With Mercury in <strong>${signName(inner.Mercury)}</strong>, your way of thinking starts with ${signVoices[signIndex(inner.Mercury)][0]}. Venus in <strong>${signName(inner.Venus)}</strong> brings ${signVoices[signIndex(inner.Venus)][1]} into the picture when you think about affection. When it’s time to act, Mars in <strong>${signName(inner.Mars)}</strong> points back to ${signVoices[signIndex(inner.Mars)][0]}.</p>
+    <p class="fine">A symbolic reading in the Western tropical tradition, using equal houses.</p>`;
 }
 
 const magazineTopics=[
-  ['Work','Saturn','Ascendant',['Ask what “done” looks like before volunteering to do more.','Make the awkward follow-up your first task, before it acquires a sequel.']],
-  ['Love','Venus','Sun',['Say what you actually want for dinner. You can work up to the bigger questions.','An invitation with a time and place beats three days of suggestive emojis.']],
-  ['Family','Sun','Moon',['Call the relative you keep meaning to call. Ten minutes counts.','Leave one evening free for the people who know your deeply unglamorous side.']],
-  ['Money','Mercury','Sun',['Give the thing in your cart a night to think about what it’s done.','Pick one recurring expense to look at. Even a tiny subscription can have a dramatic exit.']],
-  ['Well-being','Mars','Moon',['Try leaving one blank square on the calendar. It’s allowed to stay blank.','Make room for the kind of downtime that doesn’t need a progress report.']],
-  ['Travel','Jupiter','Ascendant',['Try a new neighborhood before you start shopping for luggage.','Leave a little room in the itinerary for a detour and an excellent sandwich.']]
+  ['Work','Saturn','Ascendant','Clear up who owns that job everyone thinks someone else is doing. A two-line message might save a very long meeting.','Pick one loose end worth tying up. The rest of your to-do list can wait its turn.'],
+  ['Love','Venus','Sun','Trade a vague “we should” for an actual invitation. Bonus points if it comes with a time and place.','Say what you’d genuinely enjoy doing together. Start with dinner if the bigger questions feel ambitious.'],
+  ['Family','Sun','Moon','An old family subject might read differently over coffee. Give the conversation time to get past its usual opening line.','Call someone you keep meaning to ring. Ten minutes is a perfectly respectable family reunion.'],
+  ['Money','Mercury','Sun','A small expense is worth a second look. Your shopping cart can wait overnight while you make up your mind.','Pick one recurring expense and ask whether it still earns its keep. Even a tiny subscription can make a dramatic exit.'],
+  ['Well-being','Mars','Moon','If the calendar feels too full, see what you can move before agreeing to one more thing. Keep one evening for yourself.','Give yourself a little unclaimed time. A walk can just be a walk.'],
+  ['Travel','Jupiter','Ascendant','Leave some space between plans. The best part of the outing might be the stop someone suggests on the way.','Try a new neighborhood before shopping for luggage. A good lunch can be an expedition.']
 ];
 
-function magazineReading(chart,days,best){
+function magazineReading(chart,days,best,house){
   const birthPoints={...Object.fromEntries(chart.points),Ascendant:chart.ascendant};
   const opening=Object.fromEntries(days[0][1]);
-  return '<dl class="astro-magazine">'+magazineTopics.map(([topic,planet,target,lines])=>{
+  const tense=new Set(['square','opposition']);
+  return '<dl class="astro-magazine">'+magazineTopics.map(([topic,planet,target,busy,quiet])=>{
     const hit=[...best.values()].filter(item=>item.planet===planet).sort((a,b)=>a.orb-b.orb)[0];
-    const sign=signName(birthPoints[target]);
-    const line=lines[(signIndex(birthPoints[target])+signIndex(opening[planet]))%lines.length];
+    const date=hit?readingDate.format(Date.parse(hit.date)):'';
     const cue=hit
-      ? 'The chart cue is '+planet+'’s '+hit.aspect+' to your natal '+hit.target+' around '+readingDate.format(Date.parse(hit.date))+'.'
-      : 'This prompt pairs your '+sign+' '+target+' with '+planet+' in '+signName(opening[planet])+' at the start of the month.';
-    return `<div><dt>${topic}</dt><dd>${line}<small>${cue}</small></dd></div>`;
+      ? `${date} · ${planet} ${hit.aspect} to your ${signName(hit.natalLon)} ${hit.target}`
+      : `${planet} opens in house ${house(opening[planet])} · ${signName(birthPoints[target])} ${target}`;
+    const active=hit&&(tense.has(hit.aspect)||hit.aspect==='conjunction');
+    return `<div><dt>${topic}</dt><dd>${active?busy:quiet}<small>${cue}</small></dd></div>`;
   }).join('')+'</dl>';
 }
 
@@ -169,13 +190,15 @@ function monthlyReading(chart,days,end,house){
   const houseList=sunHouses.map(n=>houseExamples[n-1]);
   const hits=chosen.sort((a,b)=>a.date.localeCompare(b.date)).map(hit=>{
     const {planet,target,aspect,meaning,date,orb,lon,natalLon}=hit;
-    return `<li><strong>${readingDate.format(Date.parse(date))} · ${planet} ${aspect} natal ${target}</strong>.
-      Here, ${planet} is passing through ${signName(lon)}, while your natal ${target} stays at its birth position in ${signName(natalLon)}. An astrologer would say this angle ${meaning}. In everyday terms, think about how ${themes[planet]} might relate to ${themes[target]}, particularly in ${houseExamples[house(lon)-1]}. ${transitPrompts[planet]}. <span class="fine">Closest daily sample: ${orb.toFixed(1)}° from exact.</span></li>`;
+    return `<li><strong>${readingDate.format(Date.parse(date))} · ${planet} ${aspect} natal ${target}</strong>
+      <p>${planet} is in ${signName(lon)}. Your natal ${target} is in ${signName(natalLon)}. Astrologically, the angle ${meaning}. Think about how ${themes[planet]} might meet ${themes[target]}. ${transitPrompts[planet]}.</p>
+      <span class="fine">Closest daily sample: ${orb.toFixed(1)}° from exact.</span></li>`;
+
   });
-  return `<p>Through ${readingDate.format(+end-86400000)} UTC, inclusive by date. Your natal ${signName(natal[0][1])} Sun,
-    ${signName(natal[1][1])} Moon, and ${signName(chart.ascendant)} Ascendant are the starting points for this reading.</p>
-    <p><strong>Where your attention might go.</strong> An astrologer follows the Sun through your birth houses to choose themes for the month. Start by thinking about ${houseList[0]}.${houseList.slice(1).map(topic=>' Later in the month the focus turns to '+topic+'.').join('')} The columns below turn these chart themes into a lighthearted magazine horoscope.</p>
-    ${magazineReading(chart,days,best)}
+  const topicList=new Intl.ListFormat('en-US').format(houseList.slice(1));
+  return `<p>Through ${readingDate.format(+end-86400000)} (UTC)</p>
+    <p><strong>The month ahead.</strong> The month opens with an emphasis on ${houseList[0]}.${topicList?` As the Sun moves through your chart, the focus shifts to ${topicList}.`:''} Read on for a few lighthearted ways that might show up in daily life.</p>
+    ${magazineReading(chart,days,best,house)}
     <details><summary>See the transits behind the reading</summary>${hits.length?'<ul>'+hits.join('')+'</ul>':'<p>No sampled transit came within 2° of one of the five major aspects to these three natal points this month.</p>'}</details>
     <p class="fine">This lesson samples once a day at the selected UTC time and uses a 2° tolerance. It highlights up to three close contacts from the Sun and planets, excluding the fast-moving transiting Moon. The interpretations are symbolic and intended for reflection.</p>`;
 }
@@ -276,21 +299,27 @@ export function mountAstrology(root,api){
     <div><h3>The sky from the ground</h3><p data-sky-time></p>
     <canvas data-ground tabindex="0" aria-label="Birth sky. Drag or use the arrow keys to look around."></canvas>
     <div class="lab-actions" data-sky-controls><button data-look="Sun">Look toward the Sun</button><button data-look="ASC">Look at the ascendant</button><button data-look="DSC">Look at the descendant</button><button data-look="Taurus">Taurus</button><button data-look="Gemini">Gemini</button><label><input type="checkbox" checked> Show hidden sky</label><output></output></div>
-    <p>The horizon separates sky from ground. The overlay reveals stars washed out by sunlight and positions below the horizon. The constellation figures connect a few bright stars. They illustrate the constellations without tracing official boundaries.</p><section class="astro-reading"><h3>How an astrologer would interpret it…</h3><div data-profile></div></section></div>
+    <p>The horizon separates sky from ground. The overlay reveals stars washed out by sunlight and positions below the horizon. The constellation figures connect a few bright stars. They illustrate the constellations without tracing official boundaries.</p></div>
     <div><h3>The same sky as a birth chart</h3><canvas data-natal-wheel aria-label="Natal chart with twelve tropical signs, twelve equal houses, and the horizon from the eastern ascendant to the western descendant. At the center, north points away from the viewer and south points toward the viewer."></canvas>
     <p><strong>Sun sign:</strong> the 30° sector of the ecliptic containing the Sun. Think of the ecliptic as the Sun’s yearly route against the stars. <strong>Ascendant:</strong> the point on that route rising on the eastern horizon. The <strong>Descendant</strong> is the opposite point, setting on the western horizon. The gold line connects those two directions. The top half shows ecliptic directions above the horizon. The bottom half shows directions below it. E and W mark the eastern and western halves of the horizon. Imagine standing at the center and facing north. The small N arrow recedes into the screen in front of you. The S arrow comes toward you, along the direction behind you. These two arrows are a compass cue. The zodiac rings still show positions along the ecliptic. The bearings below give the actual rising and setting directions.</p>
     <p><strong>Houses:</strong> twelve 30° sectors in this example, starting at the ascendant. Astrology traditionally associates them with areas of life, such as self (1), home (4), and partnerships (7). Other systems draw different boundaries.</p>
-    <div data-natal></div><p>The IAU column gives the constellation on the star map. A star marker (✦) identifies constellations outside the zodiac band.</p></div></div></article>
+    <div data-natal></div><p>The IAU column gives the constellation on the star map. A star marker (✦) identifies constellations outside the zodiac band.</p></div></div>
+    <section class="astro-reading"><h3>How an astrologer would interpret it…</h3><div data-profile></div></section></article>
     <article class="lab-card"><h2>Read the sky for a chosen month</h2>
     <label>Month starts (UTC) ${dateField('astro-day',now)}</label>
+    <div class="lab-rows astro-views">
+    <div><h3>The sky at the start of the month</h3><p data-transit-sky-time></p>
+      <canvas data-transit-ground tabindex="0" aria-label="The sky at the chosen date and place. Drag or use arrow keys to look around."></canvas>
+      <div class="lab-actions" data-transit-sky-controls><button data-look="Sun">Look toward the Sun</button><button data-look="Moon">Look toward the Moon</button><label><input type="checkbox" checked> Show hidden sky</label><output></output></div></div>
+    <div><h3>Birth chart with transits</h3><canvas data-transit-wheel aria-label="Natal chart with planetary transit positions overlaid"></canvas>
     <p>The blue marks are the birth positions. Gold shows <strong>transits</strong>, the positions at the selected time, laid over the same birth houses. For example, “Saturn in Gemini” means Saturn’s ecliptic longitude is in the 60°–90° tropical sector.</p>
-    <div class="astro-reading"><h3>Same sky, different birth charts</h3>
+    <div data-transits></div></div></div>
+    <section class="astro-reading"><h3 data-month-title>The monthly horoscope that an astrologer would give you for the month starting…</h3><div data-month></div>
+    <p><strong>How the reading works.</strong> Astrologers compare moving planets with the birth chart. The five major aspects are conjunction (0°), sextile (60°), square (90°), trine (120°), and opposition (180°).</p>    <details><summary>Why the same sky gives different readings</summary>
     <p>Imagine Saturn is at <strong>15° Gemini today</strong>. Its position is the same for everyone at that moment. Your <strong>natal Saturn</strong> is a separate entry: it records where Saturn was when you were born. On the wheel, today’s Saturn is gold and your birth Saturn is blue.</p>
     <p>What changes from person to person is where today’s Saturn lands on the birth chart. With <strong>10° Scorpio rising</strong>, 15° Gemini falls in house 8, which an astrologer might link to shared finances or trust. With <strong>10° Virgo rising</strong>, the same Saturn falls in house 10, associated with work or public responsibilities. These examples use equal houses, each starting at the same degree in the next sign.</p>
-    <p>Astrologers also measure angles. Saturn at 15° Gemini forms a <strong>120° trine</strong> to a natal Sun at 15° Libra. For a natal Sun at 15° Taurus, the angle is 30°. The different readings come from comparing the same Saturn with two different birth positions.</p></div>
-    <div class="lab-rows"><canvas aria-label="Natal chart with current planetary transit positions overlaid"></canvas><div data-transits></div></div>
-    <section class="astro-reading"><h3 data-month-title>The monthly horoscope that an astrologer would give you for the month starting…</h3><div data-month></div>
-    <p><strong>How the reading works.</strong> Astrologers compare moving planets with the birth chart. The five major aspects are conjunction (0°), sextile (60°), square (90°), trine (120°), and opposition (180°).</p></section></article>
+    <p>Astrologers also measure angles. Saturn at 15° Gemini forms a <strong>120° trine</strong> to a natal Sun at 15° Libra. For a natal Sun at 15° Taurus, the angle is 30°. The different readings come from comparing the same Saturn with two different birth positions.</p></details>
+</section></article>
     <article class="lab-card"><h2>Why signs do not really match what goes on in the sky today</h2>
     <p>Imagine you could see the stars behind the Sun in broad daylight. Start with October 4 in the modern sky. Then switch to the same point in the seasonal year around 400 BCE, when Babylonian astronomers established a zodiac of twelve equal signs. The same stars stay in place so you can compare the Sun’s position.</p>
     <div class="lab-actions" data-era><button type="button" data-period="modern" aria-pressed="true">October 4 · modern sky</button><button type="button" data-period="ancient" aria-pressed="false">Around 400 BCE</button></div>
@@ -299,8 +328,10 @@ export function mountAstrology(root,api){
     <p><strong>During one night:</strong> stars drift east to west as Earth rotates. <strong>At the same clock time on later nights:</strong> those stars also appear farther west (about four minutes earlier each night), because Earth moves around the Sun. Over the year, this brings different zodiac constellations into the evening sky. Against the stars, the Sun itself shifts eastward over the year.</p>
     <p>The ecliptic’s tilt here is illustrative. Its angle to the local horizon changes with latitude, date, and time. The colored strip below the horizon is a key to the constellation boundaries along the ecliptic. The Sun’s disk is enlarged.</p></article>
     </div>`;
-  const q=s=>root.querySelector(s), [,natalCanvas,transitCanvas,precession]=root.querySelectorAll('canvas');
+  const q=s=>root.querySelector(s);
+  const natalCanvas=q('[data-natal-wheel]'),transitCanvas=q('[data-transit-wheel]'),precession=q('[data-precession]');
   const ground=mountZodiacSky(q('[data-ground]'),q('[data-sky-controls]'));
+  const transitGround=mountZodiacSky(q('[data-transit-ground]'),q('[data-transit-sky-controls]'));
   const form=q('form'), birth=q('#astro-birth'), day=q('#astro-day'), site=form.querySelector('select');
   let current, sky, comparison, period='modern', revision=0, closed=false;
   function drawPrecession(){
@@ -392,9 +423,10 @@ export function mountAstrology(root,api){
       const [a,b,month]=await Promise.all([api('zodiac',[instant,lat,lon]),
         api('zodiac',[start.toISOString(),lat,lon]),api('monthly_transits',[start.toISOString(),end.toISOString()])]);
       if(closed||rev!==revision)return;
-      current=a;sky=b;ground.set(a);
+      current=a;sky=b;ground.set(a);transitGround.set(b);
       const local=new Intl.DateTimeFormat('en-US',{dateStyle:'long',timeStyle:'short',timeZone:timeZones[site.selectedIndex]}).format(new Date(instant));
       q('[data-sky-time]').textContent=siteNames[site.selectedIndex]+' · '+local+' local · '+instant.slice(11,16)+' UTC';
+      q('[data-transit-sky-time]').textContent=siteNames[site.selectedIndex]+' · '+readingDate.format(start)+' · '+start.toISOString().slice(11,16)+' UTC';
       const dsc=wrap(a.ascendant+180);
       const bearing=key=>compass(a.sky[key][0])+' '+Math.round(a.sky[key][0])+'°';
       q('[data-status]').textContent='ASC · '+position(a.ascendant)+' · '+bearing('ASC')+
@@ -426,5 +458,5 @@ export function mountAstrology(root,api){
   const resize=new ResizeObserver(render);
   [natalCanvas,transitCanvas,precession].forEach(c=>resize.observe(c));
   void refresh();
-  return ()=>{closed=true;resize.disconnect();ground.dispose();};
+  return ()=>{closed=true;resize.disconnect();ground.dispose();transitGround.dispose();};
 }
