@@ -142,132 +142,108 @@ export function mountSolarScale(root){
 }
 
 const zoomStops=[
-  ['Milan','10 km','Start in Milan, in northern Italy. The city and its surroundings are shown schematically.'],
+  ['Milan','City scale','Start on the roof of Milan Cathedral, looking toward the skyline and the Alps.'],
   ['Earth','12,742 km across','The blue planet is our first full view. Milan is marked on the globe.'],
-  ['Earth and Moon','384,400 km on average','The Moon is about 30 Earth diameters away. Their sizes are enlarged here.'],
-  ['Sun and rocky planets','228 million km to Mars','Mercury, Venus, Earth, and Mars orbit within the main asteroid belt.'],
+  ['Earth and Moon','384,400 km on average','The Moon is about 30 Earth diameters away. The separation is compressed in this view.'],
+  ['Sun and rocky planets','228 million km to Mars','Mercury, Venus, Earth, and Mars orbit inside the main asteroid belt.'],
   ['Solar System','4.50 billion km to Neptune','Beyond the rocky planets are two gas giants and two ice giants. Icy bodies extend far beyond Neptune.'],
-  ['The Orion Spur','Thousands of light-years','The Sun is in the Local Arm, also called the Orion Spur, between two larger spiral arms. This is a small part of our galaxy.'],
-  ['The Milky Way','About 100,000 light-years across','Our Solar System orbits the galactic center far from Sagittarius A*, the supermassive black hole at the center. The face-on view is a reconstruction.'],
-  ['Nearby satellite galaxies','About 160,000–200,000 light-years away','The Large and Small Magellanic Clouds are two nearby, conspicuous satellite galaxies of the Milky Way. Several much fainter dwarf galaxies are closer.'],
-  ['The Local Group','About 10 million light-years across','Our galaxy shares this group with Andromeda, Triangulum, and dozens of smaller galaxies. It lies in a larger network of groups, clusters, and filaments.'],
-  ['Ground-based deep view','Billions of light-years','A 10.4-meter ground-based telescope such as Gran Telescopio Canarias can detect very faint distant galaxies in a small patch of sky. The Milky Way is the foreground home of the observer. This panel is a schematic, and telescope sensitivity depends on the target and exposure.'],
-  ['The observable universe','About 92 billion light-years across','This is the region from which light or other signals could have reached us. Even our strongest optical telescopes cannot see all of it in visible light. The Milky Way is shown as a size comparison.'],
-  ['The entire universe','Total size unknown','The universe may extend much farther than the observable part and could be infinite. The marked Milky Way is a size reference. Its position and the edge of this drawing carry no information about the whole universe.']
+  ['The Orion Spur','Thousands of light-years','The Sun lies in the Local Arm, also called the Orion Spur, between two larger spiral arms. Look for the solar neighborhood between the named arms on the map.'],
+  ['The Milky Way','About 100,000 light-years across','Our galaxy has a central bar and spiral arms. The gold marker identifies the galactic center, home of the supermassive black hole Sagittarius A*.'],
+  ['The Local Group','About 10 million light-years across','The Milky Way, Andromeda, and Triangulum belong to a group of dozens of galaxies. These portraits are shown side by side. Their spacing is illustrative.'],
+  ['The observable universe','About 92 billion light-years across','Light has had time to reach us from this region. Its present-day radius is about 46 billion light-years. The Webb image is a real view of one small patch of sky.'],
+  ['The entire universe','Total size unknown','The universe may extend far beyond the part we can observe. It might be infinite. The size comparison uses the observable universe as a reference because the full extent is unknown.']
 ];
 
-function spiral(c,x,y,r,phase=0,count=310){
-  for(let i=0;i<count;i++){
-    const f=random(i+20),d=r*(.09+.91*f),a=phase+f*4.5+(i%4)*tau/4+(random(i+91)-.5)*.7;
-    dot(c,x+Math.cos(a)*d,y+Math.sin(a)*d*.72,.4+random(i+7)*1.45,i%6===0?'#eec38f':'#b1caff99');
-  }
-  dot(c,x,y,r*.075,'#ffe0a7');
+const cosmicImages={
+  milan:['Milan skyline and the Alps, seen from the roof of the cathedral','https://commons.wikimedia.org/wiki/File:Skyline_Milano_(2).JPG','Chronus / Wikimedia Commons','https://creativecommons.org/licenses/by-sa/3.0/'],
+  orion:['Map of the spiral arms of the Milky Way, including the Orion Spur','https://science.nasa.gov/asset/webb/milky-way-and-our-location/','NASA/JPL-Caltech/ESO/Robert Hurt'],
+  gaia:['Face-on scientific illustration of the Milky Way based on Gaia data','https://www.esa.int/media/the-best-milky-way-map-by-gaia','ESA/Gaia/DPAC, Stefan Payne-Wardenaar · cropped','https://creativecommons.org/licenses/by-sa/3.0/igo/'],
+  m31:['Hubble mosaic showing part of the Andromeda Galaxy','https://science.nasa.gov/asset/hubble/andromeda-galaxy-m31-mosaic/','NASA, ESA, J. Dalcanton, B. F. Williams, L. C. Johnson and the PHAT team'],
+  m33:['Hubble mosaic of the Triangulum Galaxy','https://science.nasa.gov/asset/hubble/triangulum-galaxy-messier-33-m33/','NASA, ESA and M. Durbin, J. Dalcanton and B. F. Williams'],
+  deep:['Thousands of galaxies in Webb’s First Deep Field','https://science.nasa.gov/asset/webb/webbs-first-deep-field-nircam-image/','NASA, ESA, CSA and STScI']
+};
+
+function cosmicPhoto(id,title,extra=''){
+  const [alt,source,credit,license]=cosmicImages[id];
+  return `<figure class="cosmic-photo cosmic-photo-${id}"><div><img src="assets/cosmic/${id}.webp" alt="${alt}">${extra}</div>
+    <figcaption><strong>${title}</strong> <a href="${source}">${credit}</a>${license?` · <a href="${license}">CC BY-SA 3.0</a>`:''}</figcaption></figure>`;
 }
-function haze(c,x,y,r,color='#a8b8dc',squash=.55){
-  c.save();c.translate(x,y);c.scale(1,squash);
-  const g=c.createRadialGradient(0,0,0,0,0,r);
-  g.addColorStop(0,color);g.addColorStop(.35,color+'74');g.addColorStop(1,color+'00');
-  dot(c,0,0,r,g);c.restore();
+
+function scaleComparison(){
+  return `<div class="cosmic-scale">
+    <div><span class="cosmic-pin" aria-hidden="true"></span><strong>Milky Way</strong><span>About 100,000 light-years across</span></div>
+    <div><span class="cosmic-width" aria-hidden="true"></span><strong>Observable universe</strong><span>About 92 billion light-years across</span></div>
+    <p>The observable universe is roughly <strong>920,000 times wider</strong>. At this scale the Milky Way would be smaller than a screen pixel. The gold dot is an enlarged size marker.</p>
+  </div>`;
 }
 
 export function mountCosmicZoom(root){
-  root.innerHTML=`<article class="lab-card explorer"><h2>From Milan to the universe</h2>
+  root.innerHTML=`<article class="lab-card explorer cosmic-zoom"><h2>From Milan to the universe</h2>
     <div class="lab-actions"><button type="button" data-in>Zoom in</button><button type="button" data-out>Zoom out</button><label>Jump to <select>${zoomStops.map(([name],i)=>`<option value="${i}">${name}</option>`).join('')}</select></label></div>
-    <canvas aria-label="Illustrated zoom through astronomical scales"></canvas>
     <div class="explore-caption" aria-live="polite"><h3></h3><strong></strong><p></p></div>
-    <p>Each stop resets the scale. Labels and small objects are enlarged to stay readable.</p></article>`;
-  const q=s=>root.querySelector(s),canvas=q('canvas'),select=q('select');
+    <div data-cosmic-stage></div>
+    <canvas aria-label="Illustrated view of the Earth, Moon, and planets"></canvas>
+    <section class="cosmic-expansion"><h3>How can 13.8 billion years give us 92 billion light-years?</h3>
+      <p>If the universe had stayed the same size, your calculation would work. In 13.8 billion years, light could cover at most 13.8 billion light-years in any direction. The observable diameter would be at most <strong>27.6 billion light-years</strong>.</p>
+      <p><strong>Space expanded while the light was traveling.</strong> Light still passes every nearby observer at the usual speed. In the meantime, the region that emitted that ancient light has become much farther away. The most distant regions we could have received signals from are now about <strong>46 billion light-years away</strong>. Double that to get the diameter, about <strong>92 billion light-years</strong>.</p>
+      <div class="cosmic-elastic"><div aria-hidden="true"><span></span><span></span></div><label>Stretch the elastic <input type="range" min="0" max="100" value="0" data-stretch></label></div>
+      <p>Imagine two ink dots on an elastic band. Pull the band and the dots get farther apart without sliding along it. In this analogy, the band represents the space between widely separated galaxies. The dots stand for galaxies held together by gravity. Their stars stay bound, so the galaxies themselves do not stretch along with the universe.</p>
+      <p><a href="https://www.nasa.gov/science-research/astrophysics/how-big-is-space-we-asked-a-nasa-expert-episode-61/">NASA · How big is space?</a></p>
+    </section></article>`;
+  const q=s=>root.querySelector(s),canvas=q('canvas'),select=q('select'),stage=q('[data-cosmic-stage]');
+  const photos={
+    0:()=>cosmicPhoto('milan','View from Milan Cathedral'),
+    5:()=>cosmicPhoto('orion','Spiral arms · NASA illustration'),
+    6:()=>cosmicPhoto('gaia','Our galaxy · Gaia-based illustration','<span class="cosmic-center"><i></i>Sagittarius A*</span>'),
+    7:()=>`<div class="cosmic-gallery">${cosmicPhoto('gaia','Milky Way · reconstruction')}${cosmicPhoto('m31','Andromeda · Hubble')}${cosmicPhoto('m33','Triangulum · Hubble')}</div>`,
+    8:()=>`${cosmicPhoto('deep','Webb’s First Deep Field · one patch of sky')}${scaleComparison()}`,
+    9:()=>`<div class="cosmic-unknown"><strong>How much lies beyond the horizon?</strong><span>We don’t know the size of the entire universe.</span></div>${scaleComparison()}`
+  };
   let index=0,frame=0,progress=1,closed=false;
   function draw(){
+    if(canvas.hidden)return;
     const env=canvasContext(canvas);if(!env)return;
     const {ctx:c,w,h}=env,x=w/2,y=h*.49,r=Math.min(w,h)*.36;
     space(c,w,h);
     c.save();c.translate(x,y);c.scale(mix(.86,1,progress),mix(.86,1,progress));c.translate(-x,-y);
-    const label=(s,px,py,color)=>text(c,s,px,py,color);
-    if(index===0){
-      c.fillStyle='#172c35';c.fillRect(0,0,w,h);
-      for(let i=0;i<270;i++){
-        const px=random(i)*w,py=random(i+51)*h;
-        c.fillStyle=i%6===0?'#36564e':'#4b646770';c.fillRect(px,py,4+random(i+11)*19,3+random(i+33)*9);
-      }
-      for(let i=-5;i<=5;i++){
-        line(c,[[x+i*r*.45,0],[x+i*r*.37-35,h]],'#81958176',2);
-        line(c,[[0,y+i*r*.36],[w,y+i*r*.32+30]],'#81958176',2);
-      }
-      line(c,Array.from({length:81},(_,i)=>[i*w/80,y-14+Math.sin(i*.13)*h*.20]),'#4f98b1',4);
-      dot(c,x,y,7,gold);label('Milan',x,y-15,gold);
-      label('Schematic city view',x,h-18);
-    }else if(index===1){
+    if(index===1){
       atlasGlobe(c,x,y,r,'earth');
-      dot(c,x,y,5,gold);label('Milan',x,y-13,gold);
+      dot(c,x,y,5,gold);text(c,'Milan',x,y-13,gold);
     }else if(index===2){
       const ex=x-w*.26,mx=x+w*.26;
-      line(c,[[ex,y],[mx,y]],'#8297b3');
       atlasGlobe(c,ex,y,r*.66,'earth');atlasGlobe(c,mx,y,r*.18,'moon');
-      label('Earth',ex,y+r*.66+18);label('Moon',mx,y+r*.18+18);
-    }else if(index===3||index===4){
-      const count=index===3?4:8, start=w*.075;
-      dot(c,start,y,r*.18,'#ffcc76');label('Sun',start,y-34,gold);
-      planets.slice(0,count).forEach(([name,,,color,size],i)=>{
-        const px=w*(.075+.85*(i+1)/count),rr=Math.min(r*.08,w*.018)*size;
-        planetDisc(c,px,y,rr,color,i);label(w<500&&count===8?name.slice(0,2):name,px,y+36+16*(i%2),color);
-      });
-    }else if(index===5||index===6){
-      if(index===5){
-        for(let i=0;i<400;i++){
-          const f=random(i),px=w*f,py=y+(i%3-1)*h*.21+Math.sin(f*3.6)*h*.13+(random(i+308)-.5)*h*.14;
-          dot(c,px,py,.5+random(i+9),i%3===1?'#8fc8ff':'#adb8d67a');
-        }
-        dot(c,x,y+h*.10,5,gold);label('Sun · Orion Spur',x,y+h*.10-14,gold);
-      }else{
-        spiral(c,x,y,r*1.12,.8,600);
-        dot(c,x,y,3,'#0a0e1a');label('Sagittarius A*',x,y+19,gold);
-        dot(c,x+r*.64,y-r*.11,4,blue);label('Solar System',x+r*.64,y-r*.11-12,blue);
-      }
-    }else if(index===7||index===8){
-      spiral(c,w*.36,h*.48,r*.72,.8,260);label('Milky Way',w*.36,h*.48+r*.72);
-      const companions=index===7?[['Large Magellanic Cloud',.75,.31],['Small Magellanic Cloud',.73,.66]]:[['Andromeda',.72,.32],['Triangulum',.73,.66]];
-      for(const [name,fx,fy] of companions){
-        haze(c,w*fx,h*fy,r*.27,'#a8c4e7');label(name,w*fx,h*fy+26,blue);
-      }
-      if(index===8)for(let i=0;i<19;i++)haze(c,w*random(i+110),h*(.1+.8*random(i+55)),3+5*random(i+81));
-    }else if(index===9){
-      for(let i=0;i<85;i++)haze(c,w*random(i+318),h*random(i+22),2+8*random(i+88),i%3?'#a6bce4':'#e4a078',.4+random(i+47)*.6);
-      label('Distant galaxies in a small patch of sky',x,25);
-      label('Milky Way · our foreground galaxy',x,h-18,blue);
+      text(c,'Earth',ex,y+r*.66+18);text(c,'Moon',mx,y+r*.18+18);
     }else{
-      c.save();
-      if(index===10){c.beginPath();c.arc(x,y,r*1.13,0,tau);c.clip()}
-      for(let i=0;i<1100;i++){
-        const fx=random(i),track=i%7;
-        const py=h*(.09+track*.13+.10*Math.sin(fx*10+track)+(random(i+482)-.5)*.09);
-        dot(c,fx*w,py,.45+random(i+490),index===11&&i%4?'#a4b6e27a':'#b1caff97');
-      }
-      c.restore();
-      if(index===10){c.beginPath();c.arc(x,y,r*1.13,0,tau);c.strokeStyle=blue;c.stroke()}
-      const markX=w*.30,markY=h*.73;dot(c,markX,markY,1.5,gold);
-      line(c,[[markX+36,markY-20],[markX,markY],[markX+4,markY-7]],gold);
-      label('Milky Way · size reference',w*.56,markY-26,gold);
-      label(index===10?'Observable horizon':'Extent unknown',x,25);
+      const count=index===3?4:8, start=w*.075;
+      planetDisc(c,start,y,r*.18,'#ffc76c',-1);text(c,'Sun',start,y-34,gold);
+      planets.slice(0,count).forEach(([name,,,color,size],i)=>{
+        const px=w*(.075+.85*(i+1)/count),rr=Math.min(r*.08,w*.016)*size;
+        planetDisc(c,px,y,rr,color,i);text(c,name,px,y+37+16*(i%2),color,'center',w<550?9:12);
+      });
+      text(c,'Illustration · sizes and spacing adjusted',x,h-16);
     }
     c.restore();
   }
   function show(){
     const [name,scale,note]=zoomStops[index];
-    q('h3').textContent=name;q('.explore-caption strong').textContent=scale;q('.explore-caption p').textContent=note;
+    q('.explore-caption h3').textContent=name;q('.explore-caption strong').textContent=scale;q('.explore-caption p').textContent=note;
     q('[data-in]').disabled=index===0;q('[data-out]').disabled=index===zoomStops.length-1;select.value=index;
     cancelAnimationFrame(frame);
+    canvas.hidden=Boolean(photos[index]);stage.hidden=!canvas.hidden;
+    stage.innerHTML=photos[index]?.()??'';
+    if(canvas.hidden)return;
     if(matchMedia('(prefers-reduced-motion: reduce)').matches){progress=1;draw();return}
     const start=performance.now();
     function animate(now){progress=Math.min(1,(now-start)/240);draw();if(progress<1)frame=requestAnimationFrame(animate)}
     frame=requestAnimationFrame(animate);
   }
+  show();
   const stop=observe(canvas,draw);
   void loadTextures().then(()=>{if(!closed)draw()});
   q('[data-in]').onclick=()=>{index--;show()};
   q('[data-out]').onclick=()=>{index++;show()};
   select.onchange=()=>{index=+select.value;show()};
-  show();
+  q('[data-stretch]').oninput=event=>q('.cosmic-elastic>div').style.width=(34+.64*Number(event.target.value))+'%';
   return ()=>{closed=true;cancelAnimationFrame(frame);stop()};
 }
 
