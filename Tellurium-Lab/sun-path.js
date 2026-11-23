@@ -38,6 +38,10 @@ function localSeason(city,index){
   return (index===0)===(city.latitude>0)?' · summer':' · winter';
 }
 
+function pathStroke({color,dash}){
+  return `stroke="${color}" stroke-width="2.3" stroke-dasharray="${dash}" stroke-linecap="round"`;
+}
+
 function cityPanel(city,west){
   const arcs=seasonalArcs(city.latitude,west);
   const headings=west?['S','W','N']:['N','E','S'];
@@ -46,9 +50,12 @@ function cityPanel(city,west){
     return `<path d="M34 ${y}H319" stroke="#2a3d55"/><text x="29" y="${y+4}" text-anchor="end">${alt}°</text>`;
   }).join('');
   const curves=arcs.map(({points,color,dash,sun})=>`
-    <polyline points="${points.map(p=>p.map(n=>n.toFixed(2)).join(',')).join(' ')}" fill="none" stroke="${color}" stroke-width="2.3" stroke-dasharray="${dash}" stroke-linecap="round"/>
+    <polyline points="${points.map(p=>p.map(n=>n.toFixed(2)).join(',')).join(' ')}" fill="none" ${pathStroke({color,dash})}/>
     <circle cx="${sun[0]}" cy="${sun[1]}" r="5" fill="${color}" stroke="#14243a" stroke-width="1.4"/>`).join('');
-  const readings=arcs.map(({name,noon},index)=>`<dt>${index===1?'Both equinoxes':name}${localSeason(city,index)}</dt><dd>${noon.toFixed(1)}°</dd>`).join('');
+  const readings=arcs.map((arc,index)=>`
+    <dt><svg class="sun-path-sample" viewBox="0 0 30 10" aria-hidden="true"><path d="M2 5H28" ${pathStroke(arc)}/></svg>
+      <span>${index===1?'Both equinoxes':arc.name}${localSeason(city,index)}</span></dt>
+    <dd>${arc.noon.toFixed(1)}°</dd>`).join('');
   const lat=`${Math.abs(city.latitude).toFixed(2)}° ${city.latitude>0?'N':'S'}`;
   return `<section class="sun-path-city">
     <h3>${city.name}</h3><small>${city.place} · ${lat}</small>
@@ -74,7 +81,6 @@ export function mountSunPath(root){
       <button type="button" data-face="east" aria-pressed="true">Face east · sunrise to noon</button>
       <button type="button" data-face="west" aria-pressed="false">Face west · noon to sunset</button>
     </div>
-    <ul class="sun-path-legend" aria-label="Solar paths">${seasons.map(({name,color,dash})=>`<li><svg width="29" height="10" aria-hidden="true"><path d="M1 5H28" stroke="${color}" stroke-width="3" stroke-dasharray="${dash}" stroke-linecap="round"/></svg>${name}</li>`).join('')}</ul>
     <p data-sun-guide></p>
     <div class="sun-path-grid"></div>
     <p><strong>What changes?</strong> At the equinoxes the Sun rises due east and sets due west. In June it rises north of east and sets north of west. In December both points shift south. June brings the higher noon Sun to New York and the lower one to Rio. Near the equator in Kampala, the noon Sun is nearly overhead at the equinoxes and switches sides of the sky between the solstices.</p>
