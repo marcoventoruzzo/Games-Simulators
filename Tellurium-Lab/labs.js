@@ -1,3 +1,4 @@
+import {mountSunPath} from './sun-path.js';
 import {mountAstronomyHistory,mountBigBang} from './astronomy-history.js';
 import {mountMeridian,mountStarNavigation} from './field-astronomy.js';
 import {mountCosmicZoom,mountMiniStellarium,mountSolarScale} from './exploration.js';
@@ -860,7 +861,7 @@ function galileoLab(root){
   return ()=>{};
 }
 
-const labs={analemma,meridian:mountMeridian,navigation:mountStarNavigation,sky:skyLab,stars:starLab,birth:mountBirth,doppler:dopplerLab,dark:darkLab,measure:measureLab,'light-speed':lightSpeedLab,'black-hole':mountBlackHole,planets:mountPlanets,retrograde:retrogradeLab,'cosmic-zoom':mountCosmicZoom,'mini-stellarium':mountMiniStellarium,'solar-scale':mountSolarScale,galileo:galileoLab,'history-astro':mountAstronomyHistory,'big-bang':mountBigBang,astrology:mountAstrology};
+const labs={analemma,'sun-path':mountSunPath,meridian:mountMeridian,navigation:mountStarNavigation,sky:skyLab,stars:starLab,birth:mountBirth,doppler:dopplerLab,dark:darkLab,measure:measureLab,'light-speed':lightSpeedLab,'black-hole':mountBlackHole,planets:mountPlanets,retrograde:retrogradeLab,'cosmic-zoom':mountCosmicZoom,'mini-stellarium':mountMiniStellarium,'solar-scale':mountSolarScale,galileo:galileoLab,'history-astro':mountAstronomyHistory,'big-bang':mountBigBang,astrology:mountAstrology};
 export function mountLab(root,key,api,year){
   return labs[key](root,api,year);
 }

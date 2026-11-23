@@ -1,6 +1,7 @@
 const slides=[
   ['Prehistory','An Orion older than writing?','A carved mammoth-ivory plaque from Geißenklösterle, Germany, depicts a human-like figure. One interpretation connects it to Orion. The carving is real; the star-map reading remains a hypothesis.','ivory'],
   ['Second and first millennia BCE','Keeping time in Mesopotamia','Babylonian scholars recorded eclipses and planetary positions. Long records let them recognize cycles and forecast some events.','babylon'],
+  ['Bronze Age · buried around 1600 BCE','The Nebra Sky Disc','This bronze disc from present-day Germany carries gold stars, a crescent, and a circle that may be the Sun or the full Moon. A tight cluster is usually read as the Pleiades. An arc along the edge is thought to mark the span between the solstice sunrise or sunset positions.','nebra'],
   ['Ancient world','Different skies, different traditions','Observers in China recorded comets and guest stars. Elsewhere, sky knowledge helped people keep calendars, travel, navigate and mark the seasons.','ancient'],
   ['Second century CE','Ptolemy’s moving circles','In the Almagest, Earth was near the center. Planets moved along small circles called epicycles, carried along larger circles. This reproduced apparent retrograde motion well enough to be useful for prediction.','ptolemy'],
   ['Medieval period','Astronomy crosses languages','Astronomers working in Arabic preserved and criticized Greek models, refined tables and built instruments. Works such as al-Sufi’s Book of Fixed Stars helped carry this knowledge across regions.','ancient'],
@@ -29,13 +30,17 @@ export function mountAstronomyHistory(root){
   root.innerHTML=`<article class="lab-card astronomy-history"><h2>Brief history of astronomy and astrophysics</h2>
     <div class="history-pages"><button type="button" data-prev>Previous</button><output></output><button type="button" data-next>Next</button></div>
     <div class="history-panel" aria-live="polite"><img width="480" height="360" alt=""><div><small></small><h3></h3><p></p></div></div>
-    <p class="fine">Illustrations are original teaching artwork. Read more at <a href="https://whc.unesco.org/document/104639">UNESCO’s archaeoastronomy study</a>, <a href="https://pwg.gsfc.nasa.gov/stargaze/Stimelinold.htm">NASA’s early astronomy chronology</a>, and <a href="https://science.nasa.gov/universe/black-holes/">NASA’s black-hole guide</a>.</p></article>`;
+    <p class="fine">Read more at <a href="https://www.landesmuseum-vorgeschichte.de/en/nebra-sky-disc/the-phases-of-the-sky-disc">the State Museum of Prehistory’s guide to the Nebra Sky Disc</a>, <a href="https://whc.unesco.org/document/104639">UNESCO’s archaeoastronomy study</a>, <a href="https://pwg.gsfc.nasa.gov/stargaze/Stimelinold.htm">NASA’s early astronomy chronology</a>, and <a href="https://science.nasa.gov/universe/black-holes/">NASA’s black-hole guide</a>.</p></article>`;
   let index=0;
   const q=s=>root.querySelector(s);
   function show(){
     const [era,title,copy,art]=slides[index];
     q('small').textContent=era;q('h3').textContent=title;q('.history-panel p').textContent=copy;
-    q('img').src='assets/history/'+art+'.webp';q('output').textContent=(index+1)+' / '+slides.length;
+    const image=q('img');
+    image.src='assets/history/'+art+'.webp';
+    image.alt=art==='nebra'?'Bronze Nebra Sky Disc with gold stars, crescent, circle, and arcs':'';
+    image.classList.toggle('history-artifact',art==='nebra');
+    q('output').textContent=(index+1)+' / '+slides.length;
     q('[data-prev]').disabled=index===0;q('[data-next]').disabled=index===slides.length-1;
   }
   q('[data-prev]').onclick=()=>{if(index>0){index--;show()}};

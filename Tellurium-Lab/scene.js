@@ -118,14 +118,24 @@ export function atlasGlobe(ctx,x,y,r,body){
   ctx.drawImage(entry.sprite,x-r,y-r,r*2,r*2);
 }
 
-let earthSprite, earthTexture;
-function staticEarth(ctx,[x,y],r){
-  if(!earthSprite||earthTexture!==textures.earth){
+const earthSprites=new Map();
+let earthTexture;
+function staticEarth(ctx,[x,y],r,screenLight=[0,0,1]){
+  if(earthTexture!==textures.earth){
+    earthSprites.clear();
+    earthTexture=textures.earth;
+  }
+  const key=screenLight.map(component=>Math.round(component*32)).join(",");
+  let earthSprite=earthSprites.get(key);
+  if(!earthSprite){
     const lon=-Math.PI/6, lat=Math.PI/6;
     const front=[Math.cos(lon)*Math.cos(lat),Math.sin(lon)*Math.cos(lat),Math.sin(lat)];
     const right=[-Math.sin(lon),Math.cos(lon),0];
-    earthSprite=makeGlobeSprite('earth',[right,cross(front,right),front],front,Z,[1,0,0],false);
-    earthTexture=textures.earth;
+    const up=cross(front,right);
+    const light=add(add(mul(right,screenLight[0]),mul(up,screenLight[1])),mul(front,screenLight[2]));
+    earthSprite=makeGlobeSprite('earth',[right,up,front],light,Z,[1,0,0],false);
+    if(earthSprites.size>=96)earthSprites.clear();
+    earthSprites.set(key,earthSprite);
   }
   ctx.drawImage(earthSprite,x-r,y-r,2*r,2*r);
 }
@@ -196,7 +206,7 @@ function earthCentered(ctx,w,h,camera,zoom,frame){
   const node=unit(cross(Z,normal)),other=unit(cross(normal,node));
   line(ctx,circle(1.49,[1,0,0],[0,1,0]).map(project),'#708dae55',1,[],true,'#35527b22');
   line(ctx,circle(1.01,node,other).map(project),'#8ab8eaad',1.3,[4,4]);
-  const axisA=project([-2.34,0,0]), axisB=project([1.28,0,0]);
+  const axisA=project(mul(light,2.34)), axisB=project(mul(light,-1.28));
   const breadth=22*zoom;
   for(const offset of [-breadth,0,breadth]){
     const a=[axisA[0],axisA[1]+offset],b=[axisB[0],axisB[1]+offset];
@@ -209,7 +219,7 @@ function earthCentered(ctx,w,h,camera,zoom,frame){
   bodies.sort((a,b)=>project(a[1])[2]-project(b[1])[2]);
   for(const [body,v,r] of bodies){
     const p=project(v),radius=Math.max(body==='moon'?8:12,r*scale);
-    if(body==='earth')staticEarth(ctx,p,radius);
+    if(body==='earth')staticEarth(ctx,p,radius,camera.map(axis=>dot(light,axis)));
     else globe(ctx,p,radius,body,camera,body==='moon'?unit(fromWorld(mul(add(frame.earth,frame.moon),-1))):light,
       normal,moonPrime(m,normal),body==='moon'&&frame.shadow==='Inside Earth’s umbra');
   }

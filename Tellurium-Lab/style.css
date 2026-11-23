@@ -231,3 +231,19 @@ nav{flex-wrap:wrap}
 .end-game section{padding:11px;background:#142238;border:1px solid var(--line);border-radius:10px}
 .end-game h3{margin-top:0}
 @media(max-width:680px){.history-panel{grid-template-columns:1fr}.history-panel img{max-height:300px}}
+
+.history-panel img.history-artifact{object-fit:contain;background:#141316}
+.sun-path-controls,.sun-path-legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin:14px 0}
+.sun-path-controls button[aria-pressed=true]{background:var(--blue);color:#081223}
+.sun-path-legend{padding:0;list-style:none;color:var(--faint);font-size:.9rem}
+.sun-path-legend li{display:flex;align-items:center;gap:6px}
+.sun-path-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.sun-path-city{min-width:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:#0b1526}
+.sun-path-city svg{display:block;width:100%;height:auto;font:12px system-ui}
+.sun-path-city svg text{fill:#c9d8ec}
+.sun-path-city h3{margin:0}
+.sun-path-city small{color:var(--faint)}
+.sun-path-city p{font-size:.9rem}
+.sun-path-city dl{display:grid;grid-template-columns:1fr auto;gap:.3em 1em;font-size:.83rem;margin:.6em 0 0}
+.sun-path-city dd{margin:0;font-variant-numeric:tabular-nums}
+@media(max-width:820px){.sun-path-grid{grid-template-columns:1fr}.sun-path-city svg{max-width:520px;margin:auto}}
