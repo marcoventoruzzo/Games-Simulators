@@ -10,7 +10,16 @@ const planets=[
  ['Jupiter','#ebbb9a',11.86,['11.86 years','9 h 56 min','47,000 km/h','5.20 AU · 778.5 million km','3.13°','−110 °C','Small','Mild','≈ 5 °C','No solid surface','2.53 g','Extensive','Very strong','H₂, He, CH₄']],
  ['Saturn','#ffe1a2',29.46,['29.45 years','10 h 33 min','34,700 km/h','9.58 AU · 1.43 billion km','26.73°','−140 °C','Small','Mild','≈ 5–10 °C','No solid surface','1.07 g','Extensive','Strong','H₂, He, CH₄']],
  ['Uranus','#9ce6e4',84.01,['84 years','17 h 14 min · retrograde','24,500 km/h','19.2 AU · 2.87 billion km','97.8°','−195 °C','Very small','Extreme','≈ 40 °C','No solid surface','0.89 g','Present','Strong, tilted and off-center','H₂, He, CH₄']],
- ['Neptune','#728eff',164.79,['164.8 years','16 h 6 min','19,500 km/h','30.1 AU · 4.50 billion km','28.3°','−200 °C','Very small','Extreme','≈ 40 °C','No solid surface','1.14 g','Present','Strong and tilted','H₂, He, CH₄']]
+ ['Neptune','#728eff',164.79,['164.8 years','16 h 6 min','19,500 km/h','30.1 AU · 4.50 billion km','28.3°','−200 °C','Very small','Extreme','≈ 40 °C','No solid surface','1.14 g','Present','Strong and tilted','H₂, He, CH₄']],
+ ['Pluto','#e6c1a9',248,['248 years','6.39 days · retrograde','16,700 km/h','39.5 AU · 5.91 billion km','≈ 120°','≈ −232 °C','Varies across the surface','Yes · long seasons','Varies by location','≈ 0.00001 atm · variable','0.063 g','Very thin · mostly nitrogen','No global field detected','N₂, CH₄, CO']]
+];
+
+const plutoIndex=planets.length-1;
+const plutoRows=[
+ ['Classification','Dwarf planet · reclassified in 2006'],
+ ['Why?','Pluto goes around the Sun and has enough gravity to be nearly round. It shares its part of the Solar System with many icy bodies and does not gravitationally dominate its orbital neighborhood.'],
+ ['Diameter','About 2,377 km (1,477 miles)'],
+ ['Up close','NASA’s New Horizons flew past in 2015 and revealed a heart-shaped region with a broad plain of nitrogen ice. Pluto’s largest moon is Charon.']
 ];
 
 const sunRows=[
@@ -25,15 +34,15 @@ const sunRows=[
 ];
 const tableLabels=['Revolution around the Sun<br>Time to complete one orbit','Rotation on its axis<br>Sidereal rotation period','Average orbital speed<br>Around the Sun','Average distance from the Sun<br>1 AU ≈ 149.6 million km','Axial tilt<br>Relative to the orbital normal','Average temperature<br>Surface or upper atmosphere','Day–night temperature range<br>Typical difference','Does it have seasons?<br>Seasonal changes','Seasonal temperature range<br>Average difference','Surface pressure<br>Relative to Earth','Surface gravity<br>Relative to Earth','Atmosphere<br>Is it present?','Magnetic field<br>Is it present?','Three main atmospheric constituents shown'];
 function keplerGraph(){
-  const distances=[.39,.72,1,1.52,5.20,9.58,19.22,30.07];
+  const distances=[.39,.72,1,1.52,5.20,9.58,19.22,30.07,39.48];
   const x=d=>67+Math.log10(d/.1)*166;
   const y=t=>284-Math.log10(t/.01)*50;
   return `<details><summary>Distance and orbital period · Kepler’s third law</summary>
-    <svg class="kepler-graph" viewBox="0 0 610 330" role="img" aria-label="Logarithmic graph of distance and orbital period for all eight planets">
+    <svg class="kepler-graph" viewBox="0 0 610 330" role="img" aria-label="Logarithmic graph of distance and orbital period for the eight planets and Pluto">
     ${[.1,1,10,100].map(v=>`<path d="M${x(v)} 30V284" stroke="#465673"/><text x="${x(v)}" y="303" text-anchor="middle">${v}</text>`).join('')}
     ${[.01,.1,1,10,100,1000].map(v=>`<path d="M67 ${y(v)}H565" stroke="#465673"/><text x="60" y="${y(v)+4}" text-anchor="end">${v}</text>`).join('')}
     <path d="M${x(.1)} ${y(.1**1.5)}L${x(100)} ${y(100**1.5)}" stroke="#ddd9a8" stroke-dasharray="4 4"/>
-    ${planets.map(([name,color,period],i)=>`<circle cx="${x(distances[i])}" cy="${y(period)}" r="5" fill="${color}"/><text x="${x(distances[i])+8}" y="${y(period)+4}">${name}</text>`).join('')}
+    ${planets.map(([name,color,period],i)=>`<circle cx="${x(distances[i])}" cy="${y(period)}" r="5" fill="${color}"/><text x="${x(distances[i])+8}" y="${y(period)+(name==='Pluto'?-5:4)}">${name}</text>`).join('')}
     <text x="316" y="324" text-anchor="middle">Average distance from the Sun (AU)</text>
     <text transform="translate(17 155) rotate(-90)" text-anchor="middle">Orbital period (Earth years)</text></svg>
     <p>Both axes are logarithmic. The dashed line shows the approximate T² ∝ a³ relationship for orbits around the Sun.</p></details>`;
@@ -63,8 +72,8 @@ function keplerIllustrations(){
 
 function comparisonTable(){
   const [orbits,areas,periods]=keplerIllustrations();
-  return `<h3 class="planet-table-title">The Planets of the Solar System</h3>
-  <div class="planet-table-scroll"><table class="planet-table"><thead><tr><th scope="col">Property</th>${planets.map(([name,color])=>`<th scope="col" style="--planet:${color}"><span class="planet-swatch"></span>${name}</th>`).join('')}</tr></thead>
+  return `<h3 class="planet-table-title">The Planets of the Solar System and Pluto</h3>
+  <div class="planet-table-scroll"><table class="planet-table"><thead><tr><th scope="col">Property</th>${planets.map(([name,color])=>`<th scope="col" style="--planet:${color}"><span class="planet-swatch"></span>${name}${name==='Pluto'?'<br><small>Dwarf planet</small>':''}</th>`).join('')}</tr></thead>
   <tbody>${tableLabels.map((label,i)=>`<tr><th scope="row">${label}</th>${planets.map(([,color,,values])=>`<td style="--planet:${color}">${values[i]}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
   <section class="planet-laws"><h3>Kepler’s Laws · How Planets Move</h3><div class="kepler-cards">
   <section><h4>1 · Elliptical orbits</h4>${orbits}<p>The Sun sits at one focus of the ellipse.</p></section>
@@ -74,10 +83,10 @@ function comparisonTable(){
 
 export function mountPlanets(root){
   root.innerHTML=`<article class="lab-card planet-lab"><h2>Planets in our Solar system</h2>
-    <p>Pick the Sun or a planet to open its data card. Orbital sizes and planet sizes are illustrative. The faster motions of the inner planets are based on the orbital periods.</p>
+    <p>Pick the Sun, a planet, or Pluto to open its data card. Orbital sizes and planet sizes are illustrative. The faster motions of the inner planets are based on the orbital periods. Pluto’s dashed oval shows its more stretched-out path.</p>
     <div class="lab-actions"><button data-flip>Flip to the planet table</button><button data-pause>Pause orbits</button></div>
     <div class="slate"><div class="slate-inner">
-      <div class="slate-face slate-front"><div class="planet-orbit"><canvas aria-label="Animated diagram of the eight planets orbiting the Sun, with the Main Asteroid Belt between Mars and Jupiter and the Kuiper Belt beyond Neptune"></canvas>
+      <div class="slate-face slate-front"><div class="planet-orbit"><canvas aria-label="Animated diagram of the eight planets and Pluto orbiting the Sun, with the Main Asteroid Belt between Mars and Jupiter and the Kuiper Belt beyond Neptune"></canvas>
       <button data-planet="sun" title="Sun" aria-label="Sun" class="orbit-sun"></button>
       ${planets.map(([name,color],i)=>`<button data-planet="${i}" title="${name}" aria-label="${name}" style="--planet:${color}"></button>`).join('')}</div>
       <div class="lab-actions planet-key"><button data-planet="sun">Sun</button>${planets.map(([name],i)=>`<button data-planet="${i}">${name}</button>`).join('')}</div>
@@ -85,7 +94,7 @@ export function mountPlanets(root){
       </div>
       <div class="slate-face slate-back" inert>${comparisonTable()}</div>
     </div></div>
-    <p>The <strong>Main Asteroid Belt</strong> lies between Mars and Jupiter. Beyond Neptune, the <strong>Kuiper Belt</strong> is home to icy bodies, including Pluto.</p>
+    <p>The <strong>Main Asteroid Belt</strong> lies between Mars and Jupiter. Beyond Neptune, the <strong>Kuiper Belt</strong> is home to icy bodies, including <strong>Pluto</strong>. Once listed as the ninth planet, Pluto was reclassified as a dwarf planet in 2006. <a href="https://science.nasa.gov/dwarf-planets/pluto/facts/">Pluto facts from NASA</a></p>
     <details class="oort-note"><summary>Beyond the Kuiper Belt · Oort Cloud</summary>
       <div class="lab-rows">
       <svg class="kepler-mini" viewBox="0 0 220 128" role="img" aria-label="A nearly spherical cloud surrounds a tiny flattened planetary system. Distances are not to scale.">
@@ -96,7 +105,7 @@ export function mountPlanets(root){
       </svg>
       <p>Scientists infer that a vast, roughly spherical cloud of icy objects surrounds the solar system far beyond the Kuiper Belt. It is thought to supply many long-period comets. The small blue oval shows the flattened planetary region for comparison.</p></div>
     </details>
-    <p>The reverse reproduces the comparison in English, with the same planet order and measurements. Seasonal and day–night ranges are illustrative and depend on location, altitude and measurement method. Giant-planet temperatures and gravity refer to atmospheric reference levels.</p>
+    <p>The reverse reproduces the comparison in English, with Pluto added as a dwarf planet. Seasonal and day–night ranges are illustrative and depend on location, altitude and measurement method. Giant-planet temperatures and gravity refer to atmospheric reference levels.</p>
   </article>`;
   const canvas=root.querySelector('canvas'), panel=root.querySelector('.planet-info');
   const dots=[...root.querySelectorAll('.planet-orbit button:not(.orbit-sun)')];
@@ -128,10 +137,21 @@ export function mountPlanets(root){
     c.fillStyle='#ffce79';c.shadowColor='#ffb45d';c.shadowBlur=23;
     c.beginPath();c.arc(x,y,Math.max(8,radius*.055),0,Math.PI*2);c.fill();c.shadowBlur=0;
     dots.forEach((button,i)=>{
-      const r=radius*(.17+i*.115), a=i*1.7+years*Math.PI*2/planets[i][2];
-      c.beginPath();c.ellipse(x,y,r,r*.77,0,0,Math.PI*2);c.strokeStyle='#58749e60';c.stroke();
-      button.style.left=(x+r*Math.cos(a))+'px';button.style.top=(y-r*.77*Math.sin(a))+'px';
-      button.style.setProperty('--disc',([8,11,12,10,19,17,14,14][i])+'px');
+      const pluto=i===plutoIndex;
+      const r=radius*(pluto?1.045:.17+i*.115), a=(pluto?2.65:i*1.7)+years*Math.PI*2/planets[i][2];
+      const cx=x+(pluto?r*.13:0), ry=r*(pluto?.71:.77);
+      c.beginPath();c.ellipse(cx,y,r,ry,0,0,Math.PI*2);
+      c.strokeStyle=pluto?'#e6c1a985':'#58749e60';
+      c.setLineDash(pluto?[3,4]:[]);
+      c.stroke();c.setLineDash([]);
+      const px=cx+r*Math.cos(a),py=y-ry*Math.sin(a);
+      button.style.left=px+'px';button.style.top=py+'px';
+      button.style.setProperty('--disc',([8,11,12,10,19,17,14,14,7][i])+'px');
+      if(pluto){
+        c.font='600 11px system-ui';c.textAlign=px>w*.7?'right':'left';
+        c.fillStyle=planets[i][1];c.fillText('Pluto',px+(px>w*.7?-9:9),py-7);
+        c.textAlign='left';
+      }
     });
     c.font='600 12px system-ui';
     c.textBaseline='middle';
@@ -167,6 +187,7 @@ export function mountPlanets(root){
     const isSun=button.dataset.planet==='sun';
     const [name,,,values]=isSun?['Sun',null,null,null]:planets[Number(button.dataset.planet)];
     const rows=isSun?sunRows:labels.map((label,i)=>[label,values[i]]);
+    if(name==='Pluto')rows.unshift(...plutoRows);
     panel.querySelector('h3').textContent=name;
     panel.querySelector('dl').innerHTML=rows.map(([label,value])=>`<dt>${label}</dt><dd>${value}</dd>`).join('');
     panel.hidden=false;panel.querySelector('[data-close]').focus({preventScroll:true});
