@@ -84,10 +84,10 @@ export function mountSunPath(root){
     <p data-sun-guide></p>
     <div class="sun-path-grid"></div>
     <div class="sun-path-explanation"><p><strong>What changes?</strong> At the equinoxes the Sun rises due east and sets due west. In June it rises north of east and sets north of west. In December both points shift south. June brings the higher noon Sun to New York and the lower one to Rio. Near the equator in Kampala, the noon Sun is nearly overhead at the equinoxes and switches sides of the sky between the solstices.</p>
-      <button type="button" class="sun-path-learn" data-sun-learn aria-haspopup="dialog">Let me understand better</button>
+      <button type="button" class="lab-learn" data-sun-learn aria-haspopup="dialog">Let me understand better</button>
     </div>
     <dialog class="sun-path-dialog" aria-label="Where does the Sun set?">
-      <form method="dialog"><button type="submit" class="sun-path-close" aria-label="Close sunset illustration" autofocus>×</button></form>
+      <form method="dialog"><button type="submit" class="lab-dialog-close" aria-label="Close sunset illustration" autofocus>×</button></form>
       <img src="assets/solstice-sunsets.webp" width="1920" height="960" alt="At 50° north, the summer solstice Sun sets north of west and the winter solstice Sun sets south of west. The diagram shows Earth’s tilt and the observer’s line of sight at both solstices.">
     </dialog>
     <p class="fine">The curves use a flat, unobstructed horizon and omit atmospheric refraction. Solar noon is when the Sun reaches its highest point that day.</p>

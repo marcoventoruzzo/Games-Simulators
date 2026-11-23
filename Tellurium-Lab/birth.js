@@ -208,7 +208,12 @@ export function mountBirth(root){
     const resize=new ResizeObserver(render);resize.observe(canvas);render();
     return ()=>{stop();resize.disconnect();};
   });
-  return ()=>cleanup.forEach(dispose=>dispose());
+  const dialog=root.querySelector('.sun-future-dialog');
+  root.querySelector('[data-sun-future]').onclick=()=>dialog.showModal();
+  return ()=>{
+    if(dialog.open)dialog.close();
+    cleanup.forEach(dispose=>dispose());
+  };
 }
 
 const fusionVideo=`<article class="lab-card">
@@ -220,7 +225,18 @@ const fusionVideo=`<article class="lab-card">
     allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
 </article>
 <article class="lab-card">
-  <h2>How the Sun will die</h2>
+  <div class="sun-future-heading">
+    <h2>How the Sun will die</h2>
+    <button type="button" class="lab-learn" data-sun-future aria-haspopup="dialog">Should I worry for my progeny about this?</button>
+  </div>
+  <dialog class="sun-future-dialog" aria-labelledby="sun-future-title">
+    <form method="dialog"><button type="submit" class="lab-dialog-close" aria-label="Close discussion about the Sun’s future" autofocus>×</button></form>
+    <h2 id="sun-future-title">Should I worry for my progeny about this?</h2>
+    <p>Do not worry too much about the death of the Sun. The luminosity of the Sun is already increasing, although slowly. Earth will likely become hostile to complex life in roughly 1–2 billion years, long before the Sun becomes a red giant in about 5 billion years.</p>
+    <p><strong>Still here?</strong> I’d give <em>Homo sapiens</em> less than a 1% chance of still existing then, and natural life on Earth less than a 1% chance, including microbes.</p>
+    <p><strong>A new home?</strong> We’ve already found candidate planets. I’d give our descendants a 10% chance of establishing a self-sustaining settlement off Earth before it becomes uninhabitable.</p>
+    <p>Those percentages are personal guesses. The solar timeline comes from scientific models.</p>
+  </dialog>
   <iframe class="fusion-video" title="How the Sun will die"
     src="https://www.youtube-nocookie.com/embed/p24SQlhJVZo?hl=en&amp;cc_lang_pref=en&amp;playsinline=1"
     loading="lazy" referrerpolicy="strict-origin-when-cross-origin"
