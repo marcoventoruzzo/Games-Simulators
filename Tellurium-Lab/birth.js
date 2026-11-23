@@ -172,9 +172,9 @@ export function mountBirth(root){
       <label>Timeline <input type="range" min="0" max="${episode.scenes.length*100-1}" value="0" step="1"></label>
       <h3 data-stage></h3><p data-description></p>
       ${i===1?enrichmentNote:i===2?'<p><a href="https://science.nasa.gov/solar-system/solar-system-facts/">NASA · Solar System formation</a> · <a href="https://science.nasa.gov/moon/formation/">NASA · Moon formation</a></p>':''}
-    </article>`).join('')+fusionMarkup+'</div>';
+    </article>`).join('')+fusionVideo+'</div>';
 
-  const cleanup=[...root.querySelectorAll('.birth-card:not([data-fusion])')].map((card,i)=>{
+  const cleanup=[...root.querySelectorAll('.birth-card')].map((card,i)=>{
     const timeline=card.querySelector('input'), play=card.querySelector('[data-play]');
     const heading=card.querySelector('[data-stage]'), description=card.querySelector('[data-description]');
     const canvas=card.querySelector('canvas');
@@ -208,164 +208,14 @@ export function mountBirth(root){
     const resize=new ResizeObserver(render);resize.observe(canvas);render();
     return ()=>{stop();resize.disconnect();};
   });
-  cleanup.push(mountFusion(root));
   return ()=>cleanup.forEach(dispose=>dispose());
 }
 
-const reactions=[
-  ['Hydrogen → helium',[1,1,1,1],2,2,'Four hydrogen nuclei ultimately yield one helium-4 nucleus. In this chain, two protons become neutrons. Positrons and neutrinos also emerge. Energy is carried away by the products and radiation.'],
-  ['Helium → carbon',[4,4,4],6,6,'Three helium-4 nuclei can make carbon-12. The first two briefly form beryllium-8. If a third joins before it falls apart, the carbon nucleus can release energy and survive.'],
-  ['Carbon + helium → oxygen',[12,4],8,8,'Carbon-12 can capture a helium-4 nucleus and emit a gamma ray, forming oxygen-16. Adding protons changes the element. Oxygen has eight, while carbon has six.']
-];
-const hydrogenStages=[
-  [0,'Start with four hydrogen atoms','Each ordinary hydrogen atom has one proton and one electron. It has zero neutrons. The green dots are electrons. Their halos suggest electron clouds.'],
-  [15,'Hot gas strips the electrons','In the Sun’s core, the electrons are free to move through the hot gas. The four bare hydrogen nuclei left behind are four protons.'],
-  [32,'Make two heavy hydrogen nuclei','Two protons join in each pair. One proton in each pair changes into a neutron and sends out a positron (e⁺) and a neutrino (ν). Each pair becomes deuterium, a heavy form of hydrogen.'],
-  [51,'Make two helium-3 nuclei','Each deuterium nucleus adds a proton from the surrounding gas and gives off a gamma-ray photon. Each helium-3 nucleus now contains two protons and one neutron.'],
-  [69,'Make one helium-4 nucleus','The two helium-3 nuclei combine. Two protons return to the surrounding gas. The nucleus left behind has two protons and two neutrons. That is why the chain uses four protons overall, even though six participate along the way.'],
-  [87,'A complete helium atom','Two positrons from earlier in the chain can annihilate with two electrons, making more photons. In the hot core helium stays ionized. In cooler gas it can pick up two electrons and form the neutral atom shown here.']
-];
-
-const fusionMarkup=`<article class="lab-card birth-card" data-fusion>
-<h2>Zoom into nuclear fusion</h2>
-<p><strong>Four ordinary hydrogen atoms supply the material for one helium-4 atom.</strong> Follow what happens to the protons, neutrons, and electrons. The Sun fuses bare nuclei in its hot core.</p>
-<div class="lab-actions"><label>Reaction <select>${reactions.map(([name],i)=>`<option value="${i}">${name}</option>`).join('')}</select></label><button type="button">Play reaction</button></div>
-<canvas aria-label="Step-by-step diagram of atoms, nuclei, and outgoing energy"></canvas>
-<label>Reaction progress <input type="range" min="0" max="100" value="0"></label>
-<div class="lab-actions" data-fusion-steps>${hydrogenStages.map(([t],i)=>`<button type="button" data-fusion-jump="${t}">Step ${i+1}</button>`).join('')}</div>
-<p><strong style="color:#ffa38e">● Proton</strong> · <strong style="color:#9bcaff">● Neutron</strong> · <strong style="color:#91e5bc">● Electron</strong> · <strong style="color:#ffd18e">✦ Light and energy</strong></p>
-<p data-reaction></p>
-<p><strong>Where does the energy come from?</strong> The tightly bound helium nucleus and the other products together have less rest mass than the starting particles. The difference is released as energy, according to <strong>E = Δmc²</strong>. Some leaves as gamma-ray photons, some as motion of the particles, and some is carried away by neutrinos. Most of the energy heats the Sun. Some eventually leaves as sunlight.</p>
-<p class="fine">Particle sizes, distances, and timing are schematic. This follows the main proton–proton chain. Other stellar reactions are shown as net changes.</p>
+const fusionVideo=`<article class="lab-card">
+  <h2>Deep dive into nuclear fusion in the Sun and other stars</h2>
+  <iframe class="fusion-video"
+    title="Deep dive into nuclear fusion in the Sun and other stars"
+    src="https://www.youtube-nocookie.com/embed/XqGLec4Ms0M?hl=en&amp;cc_lang_pref=en&amp;playsinline=1"
+    loading="lazy" referrerpolicy="strict-origin-when-cross-origin"
+    allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
 </article>`;
-
-function mountFusion(root){
-  const section=root.querySelector('[data-fusion]');
-  const select=section.querySelector('select'), input=section.querySelector('input');
-  const button=section.querySelector('button'), canvas=section.querySelector('canvas');
-  let frame=0;
-  function nucleus(c,x,y,protons,neutrons,r){
-    const n=protons+neutrons;
-    for(let i=0;i<n;i++){
-      const a=i*2.39996,d=Math.sqrt(i)*r*.9;
-      disk(c,x+Math.cos(a)*d,y+Math.sin(a)*d,r,i<protons?'#ffa38e':'#9bcaff');
-    }
-  }
-  const noteBox=section.querySelector('[data-reaction]');
-  const steps=section.querySelector('[data-fusion-steps]');
-  let seen=-1;
-  function atoms(c,x,y,p,n,e,r,phase){
-    if(e){
-      c.globalAlpha=.22;disk(c,x,y,r*3.1,'#91e5bc');c.globalAlpha=1;
-      ring(c,x,y,r*3.1,1,'#91e5bc80');
-    }
-    for(let i=0;i<p+n;i++){
-      const a=-Math.PI/4+i*TAU/(p+n),d=p+n===1?0:r*.82;
-      disk(c,x+Math.cos(a)*d,y+Math.sin(a)*d,r*.66,i<p?'#ffa38e':'#9bcaff');
-    }
-    for(let i=0;i<e;i++){
-      const a=phase+i*TAU/e;
-      disk(c,x+Math.cos(a)*r*3,y+Math.sin(a)*r*3,2.8,'#91e5bc');
-    }
-  }
-  function light(c,x,y,progress,phase){
-    for(let i=0;i<5;i++){
-      const a=phase+i*TAU/5,d=12+progress*19+i*4;
-      label(c,'✦',x+Math.cos(a)*d,y+Math.sin(a)*d,'#ffd18e');
-    }
-  }
-  function drawHydrogen(c,w,h,value,stage){
-    const x=w/2,y=h*.52,r=Math.min(13,w*.033),left=w*.27,right=w*.73;
-    const step=hydrogenStages[stage],end=hydrogenStages[stage+1]?.[0]??101;
-    const f=(value-step[0])/(end-step[0]);
-    label(c,(stage+1)+' / 6 · '+step[1],x,28);
-    if(stage<2){
-      const drift=stage===1?Math.min(1,f):0;
-      for(let i=0;i<4;i++){
-        const px=w*(.14+i*.24),py=y+(i%2?1:-1)*(-3+drift*18);
-        atoms(c,px,py,1,0,stage===0?1:0,r,i*Math.PI+f*.9);
-        if(stage===1)disk(c,px+Math.sin(i*2)*r,y-r*(3+drift*2),3,'#91e5bc');
-        label(c,stage===0?'H atom':'1 proton',px,y+r*4.8);
-      }
-      if(stage===0)label(c,'Each: 1 proton · 0 neutrons · 1 electron',x,h-24);
-      else label(c,'Four free electrons · four bare protons',x,h-24);
-    }else if(stage<4){
-      for(const px of [left,right]){
-        atoms(c,px,y,stage===2?1:2,1,0,r,f);
-        if(stage===2){
-          label(c,'e⁺ + ν',px,y-r*(2.4+f), '#d1a2ff');
-          label(c,'Deuterium',px,y+r*3.4);
-        }else{
-          light(c,px,y,f,1);
-          label(c,'Helium-3',px,y+r*3.4);
-        }
-      }
-      label(c,stage===2?'Each: 1 proton + 1 neutron':'Each: 2 protons + 1 neutron',x,h-24);
-    }else{
-      atoms(c,x,y,2,2,stage===5?2:0,r,f);
-      if(stage===4){
-        const d=w*(.18+.12*f);
-        for(const sign of [-1,1]){
-          atoms(c,x+sign*d,y-r,1,0,0,r,0);
-          label(c,'Proton returns',x+sign*d,y+r*2);
-        }
-        light(c,x,y,f,.4);
-      }else{
-        light(c,x,y,.75+f*.5,.35);
-        label(c,'Neutral helium atom in cooler gas',x,y+r*4.7);
-      }
-      label(c,stage===4?'Helium-4 nucleus: 2 protons + 2 neutrons':'2 protons · 2 neutrons · 2 electrons',x,h-24);
-    }
-  }
-  function draw(){
-    const [name,inputs,p,n,note]=reactions[Number(select.value)];
-    const selection=Number(select.value),value=Number(input.value);
-    const stage=hydrogenStages.findLastIndex(([start])=>start<=value);
-    const key=selection?hydrogenStages.length+selection:stage;
-    if(key!==seen){
-      noteBox.textContent=selection?note:hydrogenStages[stage][2];
-      steps.hidden=selection!==0;
-      for(const [i,b] of [...steps.querySelectorAll('button')].entries())b.setAttribute('aria-pressed',String(i===stage));
-      seen=key;
-    }
-    const env=canvasContext(canvas);if(!env)return;
-    const {ctx:c,w,h}=env,x=w/2,y=h*.49,r=Math.min(9,w*.022);
-    const t=Number(input.value)/100, merging=Math.min(1,t/.62);
-    c.fillStyle='#0d172a';c.fillRect(0,0,w,h);
-    if(!selection){drawHydrogen(c,w,h,value,stage);return;}
-    label(c,name,x,28);
-    if(t<.62){
-      inputs.forEach((mass,i)=>{
-        const a=i*TAU/inputs.length+.26,d=w*.31*(1-merging)+r*2;
-        nucleus(c,x+Math.cos(a)*d,y+Math.sin(a)*d*.56,mass===1?1:mass/2,mass===1?0:mass/2,r);
-      });
-      label(c,'Starting nuclei',x,h-24);
-    }else{
-      const wave=(t-.62)/.38;
-      ring(c,x,y,20+wave*Math.min(w,h)*.25,1,'rgba(255,206,132,'+(.9-.8*wave)+')');
-      nucleus(c,x,y,p,n,r);
-      label(c,'Product: '+p+' protons + '+n+' neutrons',x,h-24);
-    }
-  }
-  function stop(){cancelAnimationFrame(frame);frame=0;button.textContent='Play reaction';}
-  button.onclick=()=>{
-    if(frame){stop();return;}
-    if(Number(input.value)===100)input.value=0;
-    const start=performance.now(),from=Number(input.value),ms=Number(select.value)===0?105:33;
-    button.textContent='Pause';
-    function animate(now){
-      input.value=Math.min(100,from+Math.floor((now-start)/ms));
-      draw();
-      if(Number(input.value)<100)frame=requestAnimationFrame(animate);else stop();
-    }
-    frame=requestAnimationFrame(animate);
-  };
-  steps.onclick=event=>{
-    const jump=event.target.closest('[data-fusion-jump]');if(!jump)return;
-    stop();input.value=jump.dataset.fusionJump;draw();
-  };
-  select.onchange=()=>{stop();input.value=0;draw();};
-  input.oninput=()=>{stop();draw();};
-  const observer=new ResizeObserver(draw);observer.observe(canvas);draw();
-  return ()=>{stop();observer.disconnect();};
-}

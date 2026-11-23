@@ -213,3 +213,5 @@ nav{flex-wrap:wrap}
 .flight-scale>div span{position:absolute;left:0;top:0;height:6px;border:1px solid #9fcbff;border-bottom:0}
 .flight-scale strong{color:var(--ink);font-variant-numeric:tabular-nums}
 .flight-note{min-height:2.6em}
+
+.fusion-video{display:block;width:100%;aspect-ratio:16/9;min-height:200px;border:0;border-radius:12px;background:#03070f}
