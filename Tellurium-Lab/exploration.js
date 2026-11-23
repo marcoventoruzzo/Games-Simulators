@@ -155,6 +155,10 @@ const zoomStops=[
 ];
 
 const cosmicImages={
+  pair:['Images of Earth and the Moon from the Galileo spacecraft','https://science.nasa.gov/photojournal/the-earth-and-moon/','NASA/JPL'],
+  rocky:['Photographs of planets assembled from different spacecraft observations','https://science.nasa.gov/photojournal/solar-system-montage-updated/','NASA/JPL'],
+  inner:['Mercury, Venus, Earth, the Moon and Mars in a spacecraft image composite','https://science.nasa.gov/photojournal/solar-system-montage-updated/','NASA/JPL · detail of the inner Solar System'],
+  sun:['The Sun in extreme ultraviolet, colorized','https://sdo.gsfc.nasa.gov/','NASA/SDO'],
   milan:['Milan skyline and the Alps, seen from the roof of the cathedral','https://commons.wikimedia.org/wiki/File:Skyline_Milano_(2).JPG','Chronus / Wikimedia Commons','https://creativecommons.org/licenses/by-sa/3.0/'],
   orion:['Map of the spiral arms of the Milky Way, including the Orion Spur','https://science.nasa.gov/asset/webb/milky-way-and-our-location/','NASA/JPL-Caltech/ESO/Robert Hurt'],
   gaia:['Face-on scientific illustration of the Milky Way based on Gaia data','https://www.esa.int/media/the-best-milky-way-map-by-gaia','ESA/Gaia/DPAC, Stefan Payne-Wardenaar · cropped','https://creativecommons.org/licenses/by-sa/3.0/igo/'],
@@ -162,12 +166,6 @@ const cosmicImages={
   m33:['Hubble mosaic of the Triangulum Galaxy','https://science.nasa.gov/asset/hubble/triangulum-galaxy-messier-33-m33/','NASA, ESA and M. Durbin, J. Dalcanton and B. F. Williams'],
   deep:['Thousands of galaxies in Webb’s First Deep Field','https://science.nasa.gov/asset/webb/webbs-first-deep-field-nircam-image/','NASA, ESA, CSA and STScI']
 };
-
-function cosmicPhoto(id,title,extra=''){
-  const [alt,source,credit,license]=cosmicImages[id];
-  return `<figure class="cosmic-photo cosmic-photo-${id}"><div><img src="assets/cosmic/${id}.webp" alt="${alt}">${extra}</div>
-    <figcaption><strong>${title}</strong> <a href="${source}">${credit}</a>${license?` · <a href="${license}">CC BY-SA 3.0</a>`:''}</figcaption></figure>`;
-}
 
 function scaleComparison(){
   return `<div class="cosmic-scale">
@@ -177,73 +175,103 @@ function scaleComparison(){
   </div>`;
 }
 
+function journeyImage(id){
+  return `<img class="journey-image" src="assets/cosmic/${id}.webp" alt="${cosmicImages[id][0]}" decoding="async">`;
+}
+
 export function mountCosmicZoom(root){
+  const stages=[
+    {view:journeyImage('milan'), credit:['milan']},
+    {view:'<canvas aria-label="Earth projected from photographic textures, with Milan marked"></canvas>',kind:'Photographic globe'},
+    {view:journeyImage('pair'),credit:['pair'],kind:'Galileo spacecraft images'},
+    {view:`<div class="journey-inner">${journeyImage('sun')}${journeyImage('inner')}</div>`,credit:['sun','inner'],kind:'Spacecraft image composite'},
+    {view:journeyImage('rocky'),credit:['rocky'],kind:'Spacecraft image composite'},
+    {view:journeyImage('orion'),credit:['orion'],kind:'Illustrated map'},
+    {view:`<div class="journey-galaxy">${journeyImage('gaia')}<span class="cosmic-center"><i></i>Sagittarius A*</span></div>`,credit:['gaia'],kind:'Reconstruction from Gaia data'},
+    {view:`<div class="journey-neighbors">${[['gaia','Milky Way'],['m31','Andromeda'],['m33','Triangulum']].map(([id,name])=>`<div>${journeyImage(id)}<span>${name}</span></div>`).join('')}</div>`,credit:['gaia','m31','m33'],kind:'Two Hubble mosaics and a reconstruction'},
+    {view:journeyImage('deep'),credit:['deep'],kind:'Webb image · a tiny patch of sky'},
+    {view:`<div class="journey-horizon">${journeyImage('deep')}</div><span class="journey-unknown">Beyond our observable horizon<br><strong>Extent unknown</strong></span>`,credit:['deep'],kind:'Symbolic view'}
+  ];
   root.innerHTML=`<article class="lab-card explorer cosmic-zoom"><h2>From Milan to the universe</h2>
-    <div class="lab-actions"><button type="button" data-in>Zoom in</button><button type="button" data-out>Zoom out</button><label>Jump to <select>${zoomStops.map(([name],i)=>`<option value="${i}">${name}</option>`).join('')}</select></label></div>
+    <div class="journey-window" data-journey-window>
+      ${stages.map(({view},index)=>`<div class="journey-layer" data-layer="${index}" data-scene="${['city','earth','pair','inner','system','arm','galaxy','group','deep','unknown'][index]}" ${index?'hidden':''}>${view}</div>`).join('')}
+      <span class="journey-medium" data-journey-kind></span>
+    </div>
+    <label class="journey-slider">Zoom from Milan to the universe<input type="range" min="0" max="${zoomStops.length-1}" step="0.01" value="0" data-journey-slider></label>
+    <div class="journey-controls"><button type="button" data-in>Zoom in</button><div class="journey-ticks" aria-label="Jump to a scale"><button type="button" data-jump="0">Milan</button><button type="button" data-jump="1">Earth</button><button type="button" data-jump="4">Solar System</button><button type="button" data-jump="6">Milky Way</button><button type="button" data-jump="8">Cosmos</button></div><button type="button" data-out>Zoom out</button></div>
     <div class="explore-caption" aria-live="polite"><h3></h3><strong></strong><p></p></div>
-    <div data-cosmic-stage></div>
-    <canvas aria-label="Illustrated view of the Earth, Moon, and planets"></canvas>
+    <p class="journey-credit" data-journey-credit></p>
+    <div data-journey-scale hidden>${scaleComparison()}</div>
     <section class="cosmic-expansion"><h3>How can 13.8 billion years give us 92 billion light-years?</h3>
-      <p>If the universe had stayed the same size, your calculation would work. In 13.8 billion years, light could cover at most 13.8 billion light-years in any direction. The observable diameter would be at most <strong>27.6 billion light-years</strong>.</p>
-      <p><strong>Space expanded while the light was traveling.</strong> Light still passes every nearby observer at the usual speed. In the meantime, the region that emitted that ancient light has become much farther away. The most distant regions we could have received signals from are now about <strong>46 billion light-years away</strong>. Double that to get the diameter, about <strong>92 billion light-years</strong>.</p>
+      <p>If the universe had stayed the same size, light could cover at most 13.8 billion light-years in each direction over 13.8 billion years. The observable diameter would be at most <strong>27.6 billion light-years</strong>.</p>
+      <p><strong>Space expanded while the light was traveling.</strong> Light passes every nearby observer at the usual speed. As it travels, the distance between us and the region that emitted it grows. The region at the edge of what we can observe is now about <strong>46 billion light-years away</strong>. Double that for the diameter, about <strong>92 billion light-years</strong>.</p>
       <div class="cosmic-elastic"><div aria-hidden="true"><span></span><span></span></div><label>Stretch the elastic <input type="range" min="0" max="100" value="0" data-stretch></label></div>
-      <p>Imagine two ink dots on an elastic band. Pull the band and the dots get farther apart without sliding along it. In this analogy, the band represents the space between widely separated galaxies. The dots stand for galaxies held together by gravity. Their stars stay bound, so the galaxies themselves do not stretch along with the universe.</p>
+      <p>Imagine two ink dots on an elastic band. Pull the band and the dots get farther apart without sliding along it. The band represents the space between widely separated galaxies. The dots stand for galaxies held together by gravity. Their stars stay bound as the distance between the dots grows.</p>
       <p><a href="https://www.nasa.gov/science-research/astrophysics/how-big-is-space-we-asked-a-nasa-expert-episode-61/">NASA · How big is space?</a></p>
     </section></article>`;
-  const q=s=>root.querySelector(s),canvas=q('canvas'),select=q('select'),stage=q('[data-cosmic-stage]');
-  const photos={
-    0:()=>cosmicPhoto('milan','View from Milan Cathedral'),
-    5:()=>cosmicPhoto('orion','Spiral arms · NASA illustration'),
-    6:()=>cosmicPhoto('gaia','Our galaxy · Gaia-based illustration','<span class="cosmic-center"><i></i>Sagittarius A*</span>'),
-    7:()=>`<div class="cosmic-gallery">${cosmicPhoto('gaia','Milky Way · reconstruction')}${cosmicPhoto('m31','Andromeda · Hubble')}${cosmicPhoto('m33','Triangulum · Hubble')}</div>`,
-    8:()=>`${cosmicPhoto('deep','Webb’s First Deep Field · one patch of sky')}${scaleComparison()}`,
-    9:()=>`<div class="cosmic-unknown"><strong>How much lies beyond the horizon?</strong><span>We don’t know the size of the entire universe.</span></div>${scaleComparison()}`
-  };
-  let index=0,frame=0,progress=1,closed=false;
-  function draw(){
-    if(canvas.hidden)return;
+  const q=s=>root.querySelector(s),canvas=q('canvas'),slider=q('[data-journey-slider]');
+  const layers=[...root.querySelectorAll('[data-layer]')], jumps=[...root.querySelectorAll('[data-jump]')];
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  let position=0,frame=0,caption=-1,closed=false;
+  function drawEarth(){
     const env=canvasContext(canvas);if(!env)return;
-    const {ctx:c,w,h}=env,x=w/2,y=h*.49,r=Math.min(w,h)*.36;
-    space(c,w,h);
-    c.save();c.translate(x,y);c.scale(mix(.86,1,progress),mix(.86,1,progress));c.translate(-x,-y);
-    if(index===1){
-      atlasGlobe(c,x,y,r,'earth');
-      dot(c,x,y,5,gold);text(c,'Milan',x,y-13,gold);
-    }else if(index===2){
-      const ex=x-w*.26,mx=x+w*.26;
-      atlasGlobe(c,ex,y,r*.66,'earth');atlasGlobe(c,mx,y,r*.18,'moon');
-      text(c,'Earth',ex,y+r*.66+18);text(c,'Moon',mx,y+r*.18+18);
-    }else{
-      const count=index===3?4:8, start=w*.075;
-      planetDisc(c,start,y,r*.18,'#ffc76c',-1);text(c,'Sun',start,y-34,gold);
-      planets.slice(0,count).forEach(([name,,,color,size],i)=>{
-        const px=w*(.075+.85*(i+1)/count),rr=Math.min(r*.08,w*.016)*size;
-        planetDisc(c,px,y,rr,color,i);text(c,name,px,y+37+16*(i%2),color,'center',w<550?9:12);
-      });
-      text(c,'Illustration · sizes and spacing adjusted',x,h-16);
-    }
-    c.restore();
+    const {ctx:c,w,h}=env,x=w/2,y=h*.50,r=Math.min(w,h)*.41;
+    atlasGlobe(c,x,y,r,'earth');
+    dot(c,x,y,3.6,gold);line(c,[[x,y],[x+23,y-18]],gold);
+    text(c,'Milan',x+28,y-17,gold,'left');
   }
-  function show(){
-    const [name,scale,note]=zoomStops[index];
+  function render(value){
+    position=value;
+    const low=Math.floor(value), high=Math.min(low+1,layers.length-1), fraction=value-low;
+    const alpha=fraction*fraction*(3-2*fraction);
+    layers.forEach((layer,i)=>{
+      layer.hidden=i!==low&&(i!==high||fraction===0);
+      if(layer.hidden)return;
+      layer.style.opacity=i===low?1:alpha;
+      const scale=reduced.matches?1:i===low?1-fraction*.23:1.23-fraction*.23;
+      layer.style.transform=`scale(${scale})`;
+    });
+    slider.value=value;
+    const next=Math.round(value);
+    q('[data-in]').disabled=value===0;q('[data-out]').disabled=value===layers.length-1;
+    if(next===caption)return;
+    caption=next;
+    const [name,scale,note]=zoomStops[next],{kind='Photograph',credit=[]}=stages[next];
     q('.explore-caption h3').textContent=name;q('.explore-caption strong').textContent=scale;q('.explore-caption p').textContent=note;
-    q('[data-in]').disabled=index===0;q('[data-out]').disabled=index===zoomStops.length-1;select.value=index;
+    q('[data-journey-kind]').textContent=kind;
+    slider.setAttribute('aria-valuetext',name+' · '+scale);
+    q('[data-journey-scale]').hidden=next<8;
+    q('[data-journey-credit]').innerHTML=credit.map(id=>{
+      const [,source,by,license]=cosmicImages[id];
+      return `<a href="${source}">${by}</a>${license?` (<a href="${license}">CC BY-SA 3.0</a>)`:''}`;
+    }).join(' · ');
+    for(const button of jumps)button.setAttribute('aria-pressed',String(+button.dataset.jump===next));
+  }
+  function go(target){
     cancelAnimationFrame(frame);
-    canvas.hidden=Boolean(photos[index]);stage.hidden=!canvas.hidden;
-    stage.innerHTML=photos[index]?.()??'';
-    if(canvas.hidden)return;
-    if(matchMedia('(prefers-reduced-motion: reduce)').matches){progress=1;draw();return}
-    const start=performance.now();
-    function animate(now){progress=Math.min(1,(now-start)/240);draw();if(progress<1)frame=requestAnimationFrame(animate)}
+    if(reduced.matches){render(target);return}
+    const from=position,start=performance.now(),duration=Math.min(1650,370+210*Math.abs(target-from));
+    function animate(now){
+      const t=Math.min(1,(now-start)/duration), eased=t*t*(3-2*t);
+      render(t===1?target:mix(from,target,eased));
+      if(t<1)frame=requestAnimationFrame(animate);
+    }
     frame=requestAnimationFrame(animate);
   }
-  show();
-  const stop=observe(canvas,draw);
-  void loadTextures().then(()=>{if(!closed)draw()});
-  q('[data-in]').onclick=()=>{index--;show()};
-  q('[data-out]').onclick=()=>{index++;show()};
-  select.onchange=()=>{index=+select.value;show()};
+  slider.oninput=()=>{cancelAnimationFrame(frame);render(+slider.value)};
+  slider.onkeydown=event=>{
+    if(!['ArrowLeft','ArrowRight','ArrowDown','ArrowUp'].includes(event.key))return;
+    event.preventDefault();
+    const direction=['ArrowLeft','ArrowDown'].includes(event.key)?-1:1;
+    go(Math.max(0,Math.min(layers.length-1,Math.round(position)+direction)));
+  };
+  q('[data-in]').onclick=()=>go(Math.max(0, Math.ceil(position)-1));
+  q('[data-out]').onclick=()=>go(Math.min(layers.length-1,Math.floor(position)+1));
+  for(const button of jumps)button.onclick=()=>go(+button.dataset.jump);
   q('[data-stretch]').oninput=event=>q('.cosmic-elastic>div').style.width=(34+.64*Number(event.target.value))+'%';
+  render(0);
+  const stop=observe(canvas,drawEarth);
+  void loadTextures().then(()=>{if(!closed)drawEarth()});
   return ()=>{closed=true;cancelAnimationFrame(frame);stop()};
 }
 
